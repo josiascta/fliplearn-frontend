@@ -1,1 +1,1 @@
-# FlipLearn-FrontEnd
+# FlipLearn-Frontend
