@@ -17,7 +17,7 @@ export function Layout() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/");
+      navigate("/", { replace: true });
     }
   }, []);
 
@@ -26,7 +26,10 @@ export function Layout() {
     <div className="min-h-screen flex flex-col">
       <Header title="FlipLearn" />
 
-      <Outlet />
+      <main className="flex-grow">
+        <Outlet />
+      </main>
+         
 
       <Footer />
     </div>

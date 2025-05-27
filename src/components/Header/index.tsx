@@ -42,7 +42,8 @@ export function Header({ title }: Props) {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    navigate("/");
+    localStorage.removeItem("userId");
+    navigate("/login");
   };
 
   return (
