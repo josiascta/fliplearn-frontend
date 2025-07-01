@@ -38,7 +38,7 @@ export function Register() {
   const [confirmSenha, setConfirmSenha] = useState("");
 
   const [tipoUsuario, setTipoUsuario] = useState("aluno");
-  const [graduacao, setGraduacao] = useState("");
+  const [graduacao] = useState("");
   const [dataDeNascimento, setDataDeNascimento] = useState("");
 
   async function onSubmit(e: React.FormEvent) {
@@ -111,7 +111,7 @@ export function Register() {
   return (
     <div className="flex h-screen">
       <div className="w-1/2 flex items-center justify-center bg-gray-100">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
+        <div className="w-full max-w-md bg-white py-5 px-8 rounded-lg shadow-md">
           <h1 className="text-2xl font-bold">Criar uma Conta</h1>
           <p className="text-gray-500">Cadastre-se para começar</p>
 

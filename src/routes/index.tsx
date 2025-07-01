@@ -3,7 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { AuthRoutes } from "./AuthRoutes";
 import { ProfessorRoutes } from "./ProfessorRoutes";
 import { AlunoRoutes } from "./AlunoRoutes";
-import { Loading } from "../components/Loading/Loading";
+import { Loading } from "../components/Loading";
 
 export function Routes() {
   const { session, isLoadingSession } = useAuth();
