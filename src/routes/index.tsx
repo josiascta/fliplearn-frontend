@@ -9,7 +9,7 @@ export function Routes() {
   const { session, isLoadingSession } = useAuth();
 
   function RouteSelector() {
-    const role = session?.cargos[0];
+    const role = session?.role;
 
     switch (role) {
       case "PROFESSOR":

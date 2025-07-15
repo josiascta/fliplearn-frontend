@@ -1,16 +1,40 @@
-### Fazer login
+### Fazer cadastro
 
-POST http://localhost:8080/api/auth/login 
+POST http://localhost:8080/auth/registerProfessor 
 Content-Type: application/json
 
 {
-    "email": "josiasjt3@gmail.com",
-    "password": "pro-2357"
+  "email": "josasprof@gmail.com",
+  "senha": "senhaSegura123",
+  "nome": "Josias",
+  "sobrenome": "Carneiro",
+  "dataDeNascimento": "2003-09-29",
+  "role": "PROFESSOR"
 }
 
-### Trazer listas de Flashcards
+### Fazer login - Professor
 
-GET http://localhost:8080/api/lists/user/1
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdHVkeS1hcHAiLCJzdWIiOiIxIiwiZXhwIjoxNzUxMDE5MTk0LCJyb2xlIjoiQUxVTk8ifQ.r21xlbjNnpBux24QTghMyNvXnBnRumUrHBii6wvd8mo
+POST http://localhost:8080/auth/token 
+Content-Type: application/json
+
+{
+    "email": "josasprof@gmail.com",
+    "senha": "senhaSegura123"
+}
+
+### Fazer login - Aluno
+
+POST http://localhost:8080/auth/token 
+Content-Type: application/json
+
+{
+    "email": "edu@gmail.com",
+    "senha": "aaaaa54231"
+}
+
+### Trazer listas 
+
+GET http://localhost:8080/professor
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJib29raWZ5IiwiZXhwIjoxNzUyNTU4Njg4LCJzdWIiOiIyIiwicm9sZXMiOlsiUk9MRV9QUk9GRVNTT1IiXX0.7VX8ExLy3O8hgX94alwfSzEusQE8vUlQmV1QcazCKk0
 Content-Type: application/json
 

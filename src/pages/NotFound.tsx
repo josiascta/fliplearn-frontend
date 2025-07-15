@@ -1,10 +1,47 @@
-export function NotFound() {
+import { Box, Typography, Button, useTheme } from "@mui/material";
+import { useNavigate } from "react-router";
+
+export const NotFound = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
+
   return (
-    <div className="w-screen h-screen flex justify-center items-center">
-      <div className="flex flex-col">
-        <h1 className="text-gray-100 font-semibold text-2xl mb-10">Página não disponível 😢</h1>
-        <a className="font-semibold text-center text-blue-200 hover:text-blue-300 transition ease-linear" href="/">Voltar para o início</a>
-      </div>
-    </div>
+    <Box
+      sx={{
+        height: "100vh",
+        backgroundColor: theme.palette.background.default,
+        color: theme.palette.text.primary,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        px: 3,
+      }}
+    >
+      <Typography variant="h1" sx={{ fontSize: "6rem", fontWeight: 700 }}>
+        404
+      </Typography>
+
+      <Typography variant="h4" sx={{ mb: 2 }}>
+        Página não encontrada
+      </Typography>
+
+      <Typography
+        variant="body1"
+        sx={{ mb: 4, color: theme.palette.text.secondary }}
+      >
+        Opa! Parece que essa página não existe ou foi removida.
+      </Typography>
+
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => navigate("/")}
+        sx={{ borderRadius: "25px", padding: "10px 30px" }}
+      >
+        Voltar para o início
+      </Button>
+    </Box>
   );
-}
+};

@@ -1,15 +1,17 @@
 import { Routes, Route } from "react-router";
-import { Layout } from "../components/Layout";
+import { CursoDetalhes } from "../pages/CursoDetalhes";
 import { NotFound } from "../pages/NotFound";
-import { ProfessorCursosPage } from "../pages/ProfessorCursosPage";
+import { Home } from "../pages/Home";
 import { NewCourseForm } from "../pages/CriarNovoCurso";
+import { Layout } from "../components/Layout";
 
 export function ProfessorRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route path="/" element={<ProfessorCursosPage />} />
+        <Route path="/" element={<Home />} />
         <Route path="/novo-curso" element={<NewCourseForm />} />
+        <Route path="/curso/:id" element={<CursoDetalhes />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />
