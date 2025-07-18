@@ -14,6 +14,8 @@ import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import ReactPlayer from "react-player";
+import { Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 type CursoDTO = {
   id: string;
@@ -35,7 +37,14 @@ type VideoAulaDTO = {
   professorId: number;
   moduloId: number;
 };
-
+type ModuloDTO = {
+  id: number;
+  nome: string;
+  descricao: string;
+  dataInicio: string;
+  dataFim: string;
+  cursoId: number;
+};
 
 export function CursoDetalhes() {
   const { id } = useParams();
@@ -45,7 +54,9 @@ export function CursoDetalhes() {
   const [idAluno, setIdAluno] = useState("");
   const [adicionarMsg, setAdicionarMsg] = useState("");
   const [videoaulas, setVideoaulas] = useState<VideoAulaDTO[]>([]);
-
+  const [videoaulasDoModulo, setVideoaulasDoModulo] = useState<
+    Record<number, VideoAulaDTO[]>
+  >({});
 
   const [novoTitulo, setNovoTitulo] = useState("");
   const [msgVideo, setMsgVideo] = useState("");
@@ -55,8 +66,14 @@ export function CursoDetalhes() {
   const [dataPublicacao, setDataPublicacao] = useState("");
   const [professorId, setProfessorId] = useState(session?.idUsuario); // ou defina fixo
   const [moduloId, setModuloId] = useState(0); // ajustar conforme seu curso
-
-
+  const [modulos, setModulos] = useState<ModuloDTO[]>([]);
+  const [novoModulo, setNovoModulo] = useState({
+    nome: "",
+    descricao: "",
+    dataInicio: "",
+    dataFim: "",
+  });
+  const [msgModulo, setMsgModulo] = useState("");
 
   useEffect(() => {
     if (!id) return;
@@ -69,56 +86,124 @@ export function CursoDetalhes() {
       .then((res) => res.json())
       .then((data: CursoDTO) => setCurso(data))
       .catch((err) => console.error("Erro ao buscar curso:", err));
-        // Buscar videoaulas vinculadas ao curso
-  fetch(`http://localhost:8080/video-aulas`, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("token")}`,
-    },
-  })
-    .then((res) => res.json())
-    .then((data) => setVideoaulas(data))
-    .catch((err) => console.error("Erro ao buscar videoaulas:", err));
 
+    fetch(`http://localhost:8080/video-aulas`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setVideoaulas(data))
+      .catch((err) => console.error("Erro ao buscar videoaulas:", err));
+
+    // Após carregar módulos
+    fetch(`http://localhost:8080/modulos/curso/${id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    })
+      .then((res) => res.json())
+      .then(async (modulosData: ModuloDTO[]) => {
+        setModulos(modulosData);
+
+        const aulasPorModulo: Record<number, VideoAulaDTO[]> = {};
+
+        for (const modulo of modulosData) {
+          const res = await fetch(
+            `http://localhost:8080/video-aulas/modulo/${modulo.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+              },
+            }
+          );
+
+          if (res.ok) {
+            const aulasDoModulo = await res.json();
+            aulasPorModulo[modulo.id] = aulasDoModulo;
+          } else {
+            aulasPorModulo[modulo.id] = []; // caso erro, coloca array vazio
+          }
+        }
+
+        setVideoaulasDoModulo(aulasPorModulo);
+      })
+      .catch((err) =>
+        console.error("Erro ao buscar módulos e videoaulas:", err)
+      );
   }, [id]);
 
-const handleAddVideoaula = () => {
-  if (!novoTitulo || !url) {
-    setMsgVideo("Título e URL são obrigatórios.");
-    return;
-  }
+  const handleAddVideoaula = () => {
+    if (!novoTitulo || !url) {
+      setMsgVideo("Título e URL são obrigatórios.");
+      return;
+    }
 
-  const body = {
-    titulo: novoTitulo,
-    descricao,
-    url,
-    thumbnailUrl,
-    dataPublicacao,
-    dataAtualizacao: new Date().toISOString(),
-    professorId,
-    moduloId
+    const body = {
+      titulo: novoTitulo,
+      descricao,
+      url,
+      thumbnailUrl,
+      dataPublicacao,
+      dataAtualizacao: new Date().toISOString(),
+      professorId,
+      moduloId,
+    };
+
+    fetch(`http://localhost:8080/video-aulas`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(body),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro ao cadastrar");
+        return res.json();
+      })
+      .then((data) => {
+        setMsgVideo("Videoaula cadastrada com sucesso!");
+        // limpar campos, adicionar na lista se quiser
+      })
+      .catch(() => {
+        setMsgVideo("Erro ao cadastrar videoaula.");
+      });
   };
 
-  fetch(`http://localhost:8080/video-aulas`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${localStorage.getItem("token")}`
-    },
-    body: JSON.stringify(body)
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Erro ao cadastrar");
-      return res.json();
-    })
-    .then((data) => {
-      setMsgVideo("Videoaula cadastrada com sucesso!");
-      // limpar campos, adicionar na lista se quiser
-    })
-    .catch(() => {
-      setMsgVideo("Erro ao cadastrar videoaula.");
-    });
-  };
+  const handleAddModulo = () => {
+    if (!novoModulo.nome || !novoModulo.dataInicio || !novoModulo.dataFim) {
+      setMsgModulo("Preencha todos os campos obrigatórios.");
+      return;
+    }
 
+    const body = {
+      ...novoModulo,
+      cursoId: Number(id),
+    };
+
+    fetch("http://localhost:8080/modulos/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(body),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Erro ao cadastrar módulo");
+        return res.json();
+      })
+      .then(() => {
+        setMsgModulo("Módulo cadastrado com sucesso!");
+        setNovoModulo({ nome: "", descricao: "", dataInicio: "", dataFim: "" });
+        // Atualizar lista
+        return fetch(`http://localhost:8080/modulos/curso/${id}`, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+        });
+      })
+      .then((res) => res.json())
+      .then((data) => setModulos(data))
+      .catch(() => setMsgModulo("Erro ao cadastrar módulo."));
+  };
 
   const handleAddAluno = () => {
     if (!idAluno.trim()) return;
@@ -184,8 +269,9 @@ const handleAddVideoaula = () => {
       >
         <Tab label="Avisos" />
         <Tab label="Materiais" />
-        <Tab label="Video-Aulas" />
         <Tab label="Ranking" />
+        <Tab label="Módulos" />
+        {session.role === "PROFESSOR" && <Tab label="Video-Aulas" />}
         {session.role === "PROFESSOR" && <Tab label="Opções do Curso" />}
       </Tabs>
 
@@ -218,24 +304,20 @@ const handleAddVideoaula = () => {
       {tabIndex === 2 && (
         <Box>
           <Typography variant="h6" gutterBottom>
+            Ranking
+          </Typography>
+          <Typography color="text.secondary">
+            Ranking não disponível.
+          </Typography>
+        </Box>
+      )}
+
+      
+      {tabIndex === 3 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
             Video Aulas
           </Typography>
-
-          {videoaulas.length === 0 ? (
-            <Typography color="text.secondary">
-              Nenhuma videoaula enviada.
-            </Typography>
-          ) : (
-            <ul>
-              {videoaulas.map((v, index) => (
-                <li key={index}>
-                  <a href={v.url} target="_blank" rel="noopener noreferrer">
-                    {v.titulo}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
 
           {session.role === "PROFESSOR" && (
             <Box mt={4}>
@@ -249,11 +331,33 @@ const handleAddVideoaula = () => {
                   onChange={(e) => setNovoTitulo(e.target.value)}
                   fullWidth
                 />
-                <TextField label="Descrição" value={descricao} onChange={e => setDescricao(e.target.value)} />
-                <TextField label="URL do vídeo" value={url} onChange={e => setUrl(e.target.value)} />
-                <TextField label="URL da thumbnail" value={thumbnailUrl} onChange={e => setThumbnailUrl(e.target.value)} />
-                <TextField label="Data de Publicação" type="datetime-local" value={dataPublicacao} onChange={e => setDataPublicacao(e.target.value)} />
-                <TextField label="Módulo ID" type="number" value={moduloId} onChange={e => setModuloId(Number(e.target.value))} />
+                <TextField
+                  label="Descrição"
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                />
+                <TextField
+                  label="ID do vídeo (Ex: 9PRNZD19KDU)"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <TextField
+                  label="URL da thumbnail"
+                  value={thumbnailUrl}
+                  onChange={(e) => setThumbnailUrl(e.target.value)}
+                />
+                <TextField
+                  label=""
+                  type="datetime-local"
+                  value={dataPublicacao}
+                  onChange={(e) => setDataPublicacao(e.target.value)}
+                />
+                <TextField
+                  label="Módulo ID"
+                  type="number"
+                  value={moduloId}
+                  onChange={(e) => setModuloId(Number(e.target.value))}
+                />
 
                 <Button variant="contained" onClick={handleAddVideoaula}>
                   Cadastrar Video Aula
@@ -264,49 +368,168 @@ const handleAddVideoaula = () => {
               </Stack>
             </Box>
           )}
-          {videoaulas.length === 0 ? (
-            <Typography color="text.secondary">
-              Nenhuma videoaula enviada.
-            </Typography>
-          ) : (
-            <Stack spacing={2} mt={2}>
-              {videoaulas.map((v) => (
-                <Box key={v.id} sx={{ display: 'flex', gap: 2, border: '1px solid #ccc', borderRadius: 2, p: 2 }}>
-                  <Box>
-                    <Typography variant="h6">{v.titulo}</Typography>
-                    <Typography color="text.secondary">{v.descricao}</Typography>
-                    <Typography variant="body2">
-                      Publicado em: {new Date(v.dataPublicacao).toLocaleString()}
-                    </Typography><br></br>
-                    <ReactPlayer
-                      controls
-                      width="200%"
-                      height="360px"
-                      src={"https://www.youtube.com/watch?v=" + v.url}
-                    />
-                  </Box>
-                </Box>
-              ))}
-            </Stack>
-          )}
 
+          {modulos.map((modulo) => {
+            const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
+
+            return (
+              <Accordion key={modulo.id}>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls={`panel-content-${modulo.id}`}
+                  id={`panel-header-${modulo.id}`}
+                >
+                  <Typography variant="h6" color="primary">
+                    {modulo.id + " - " + modulo.nome}
+                  </Typography>
+                </AccordionSummary>
+
+                <AccordionDetails>
+                  <Typography color="text.secondary" gutterBottom>
+                    {modulo.descricao}
+                  </Typography>
+
+                  {videosDoModulo.length === 0 ? (
+                    <Typography color="text.secondary">
+                      Nenhuma videoaula neste módulo.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={2}>
+                      {videosDoModulo.map((v) => (
+                        <Box
+                          key={v.id}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                            border: "1px solid #ccc",
+                            borderRadius: 2,
+                            p: 2,
+                          }}
+                        >
+                          <Typography variant="subtitle1">
+                            {v.titulo}
+                          </Typography>
+                          <Typography color="text.secondary">
+                            {v.descricao}
+                          </Typography>
+                          <Typography variant="body2">
+                            Publicado em:{" "}
+                            {new Date(v.dataPublicacao).toLocaleString()}
+                          </Typography>
+                          <ReactPlayer
+                            controls
+                            width="100%"
+                            height="360px"
+                            src={`https://www.youtube.com/watch?v=${v.url}`}
+                          />
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
         </Box>
-        
       )}
 
-
-      {tabIndex === 3 && (
+      
+      {tabIndex === 4 && session.role === "PROFESSOR" && (
         <Box>
           <Typography variant="h6" gutterBottom>
-            Ranking
+            Gerenciar Módulos
           </Typography>
-          <Typography color="text.secondary">
-            Ranking não disponível.
+
+          <Typography variant="subtitle1" mt={2}>
+            Cadastrar Novo Módulo
           </Typography>
+
+          <Stack spacing={2} mt={2}>
+            <TextField
+              label="Nome"
+              fullWidth
+              value={novoModulo.nome}
+              onChange={(e) =>
+                setNovoModulo((prev) => ({ ...prev, nome: e.target.value }))
+              }
+            />
+            <TextField
+              label="Descrição"
+              fullWidth
+              value={novoModulo.descricao}
+              onChange={(e) =>
+                setNovoModulo((prev) => ({
+                  ...prev,
+                  descricao: e.target.value,
+                }))
+              }
+            />
+            <TextField
+              label="Data Início"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={novoModulo.dataInicio}
+              onChange={(e) =>
+                setNovoModulo((prev) => ({
+                  ...prev,
+                  dataInicio: e.target.value,
+                }))
+              }
+            />
+            <TextField
+              label="Data Fim"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              value={novoModulo.dataFim}
+              onChange={(e) =>
+                setNovoModulo((prev) => ({ ...prev, dataFim: e.target.value }))
+              }
+            />
+
+            <Button variant="contained" onClick={handleAddModulo}>
+              Cadastrar Módulo
+            </Button>
+            {msgModulo && (
+              <Typography color="text.secondary">{msgModulo}</Typography>
+            )}
+          </Stack>
+
+          <Box mt={4}>
+            <Typography variant="subtitle1" gutterBottom>
+              Módulos do Curso
+            </Typography>
+
+            {modulos.length === 0 ? (
+              <Typography color="text.secondary">
+                Nenhum módulo ainda.
+              </Typography>
+            ) : (
+              <Stack spacing={2} mt={2}>
+                {modulos.map((m) => (
+                  <Box
+                    key={m.id}
+                    sx={{
+                      border: "1px solid #ccc",
+                      borderRadius: 2,
+                      p: 2,
+                    }}
+                  >
+                    <Typography fontWeight={600}>{m.nome}</Typography>
+                    <Typography color="text.secondary">
+                      {m.descricao}
+                    </Typography>
+                    <Typography variant="body2">
+                      {m.dataInicio} até {m.dataFim}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
         </Box>
       )}
-
-      {tabIndex === 4 && session.role === "PROFESSOR" && (
+      {tabIndex === 5 && session.role === "PROFESSOR" && (
         <Box>
           <Typography variant="h6" gutterBottom>
             Opções do Curso
@@ -331,6 +554,7 @@ const handleAddVideoaula = () => {
           )}
         </Box>
       )}
+      
     </Container>
   );
 }
