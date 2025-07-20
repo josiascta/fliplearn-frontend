@@ -9,6 +9,7 @@ import {
   CircularProgress,
   Alert,
   Stack,
+  LinearProgress,
 } from "@mui/material";
 import { useParams } from "react-router";
 import { useEffect, useState } from "react";
@@ -16,6 +17,7 @@ import { useAuth } from "../hooks/useAuth";
 import ReactPlayer from "react-player";
 import { Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
 
 type CursoDTO = {
   id: string;
@@ -75,6 +77,9 @@ export function CursoDetalhes() {
   });
   const [msgModulo, setMsgModulo] = useState("");
 
+  const [assistidas, setAssistidas] = useState<Set<number>>(new Set());
+
+
   useEffect(() => {
     if (!id) return;
 
@@ -129,6 +134,7 @@ export function CursoDetalhes() {
       .catch((err) =>
         console.error("Erro ao buscar módulos e videoaulas:", err)
       );
+
   }, [id]);
 
   const handleAddVideoaula = () => {
@@ -168,6 +174,29 @@ export function CursoDetalhes() {
         setMsgVideo("Erro ao cadastrar videoaula.");
       });
   };
+
+  const handleVideoFinalizado = (videoId: number) => {
+    setAssistidas((prev) => new Set(prev).add(videoId));
+
+    // Se quiser salvar no backend:
+    fetch(`http://localhost:8080/progresso/assistir/${videoId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        // preencha com os campos esperados pela entidade Progresso
+        usuarioId: session?.idUsuario,
+        cursoId: curso?.id,
+        videoAulaId: videoId,
+        progresso : 1,
+        dataConclusao: new Date().toUTCString()
+      }),
+    });
+
+  };
+
 
   const handleAddModulo = () => {
     if (!novoModulo.nome || !novoModulo.dataInicio || !novoModulo.dataFim) {
@@ -371,6 +400,10 @@ export function CursoDetalhes() {
 
           {modulos.map((modulo) => {
             const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
+            const total = videosDoModulo.length;
+            const concluido = videosDoModulo.filter((v) => assistidas.has(v.id)).length;
+            const porcentagem = total > 0 ? (concluido / total) * 100 : 0;
+
 
             return (
               <Accordion key={modulo.id}>
@@ -385,11 +418,20 @@ export function CursoDetalhes() {
                 </AccordionSummary>
 
                 <AccordionDetails>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom>
+                      Progresso: {concluido} de {total} ({Math.round(porcentagem)}%)
+                    </Typography>
+                    <LinearProgress variant="determinate" value={porcentagem} />
+                  </Box>
+
+                  
                   <Typography color="text.secondary" gutterBottom>
                     {modulo.descricao}
                   </Typography>
 
                   {videosDoModulo.length === 0 ? (
+                    
                     <Typography color="text.secondary">
                       Nenhuma videoaula neste módulo.
                     </Typography>
@@ -422,6 +464,7 @@ export function CursoDetalhes() {
                             width="100%"
                             height="360px"
                             src={`https://www.youtube.com/watch?v=${v.url}`}
+                            onEnded={() => handleVideoFinalizado(v.id)}
                           />
                         </Box>
                       ))}
