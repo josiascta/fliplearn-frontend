@@ -1,16 +1,18 @@
-import { Routes, Route } from "react-router";
+import { Route, Routes } from "react-router";
 import { Layout } from "../components/Layout";
-import { NotFound } from "../pages/NotFound";
-import { ProfessorCursosPage } from "../pages/ProfessorCursosPage";
+import { Home } from "lucide-react";
 import { NewCourseForm } from "../pages/CriarNovoCurso";
+import { CursoDetalhes } from "../pages/CursoDetalhes";
+import { NotFound } from "../pages/NotFound";
 import Perfil from "../pages/Perfil";
 
 export function ProfessorRoutes() {
   return (
     <Routes>
       <Route path="/" element={<Layout />}>
-        <Route path="/" element={<ProfessorCursosPage />} />
+        <Route path="/" element={<Home />} />
         <Route path="/novo-curso" element={<NewCourseForm />} />
+        <Route path="/curso/:id" element={<CursoDetalhes />} />
         <Route path="/perfil" element={<Perfil />} />
       </Route>
 

@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate } from "react-router";
-import { BotaoPadrao } from "../components/BotaoPadrao";
+import {
+  Box,
+  TextField,
+  Typography,
+  Button,
+  Alert,
+  Container,
+} from "@mui/material";
 
 export function NewCourseForm() {
   const navigate = useNavigate();
@@ -47,44 +54,59 @@ export function NewCourseForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 max-w-md mx-auto space-y-4">
-      {error && <p className="text-red-500">{error}</p>}
+    <Container maxWidth="sm" sx={{ py: 6 }}>
+      <Typography variant="h4" gutterBottom>
+        Criar Novo Curso
+      </Typography>
 
-      <div>
-        <label className="block text-sm font-medium">Nome</label>
-        <input
-          name="nome"
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
+
+      <Box
+        component="form"
+        onSubmit={handleSubmit}
+        noValidate
+        sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+      >
+        <TextField
+          label="Nome do Curso"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
           required
-          className="mt-1 block w-full border rounded px-2 py-1"
+          fullWidth
         />
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium">Descrição</label>
-        <textarea
-          name="descricao"
+        <TextField
+          label="Descrição"
           value={descricao}
           onChange={(e) => setDescricao(e.target.value)}
-          className="mt-1 block w-full border rounded px-2 py-1"
+          multiline
+          minRows={3}
+          fullWidth
         />
-      </div>
 
-      <div>
-        <label className="block text-sm font-medium">Carga Horária</label>
-        <input
-          name="cargaHoraria"
+        <TextField
+          label="Carga Horária"
           type="number"
-          min={1}
+          inputProps={{ min: 1 }}
           value={cargaHoraria}
           onChange={(e) => setCargaHoraria(Number(e.target.value))}
           required
-          className="mt-1 block w-full border rounded px-2 py-1"
+          fullWidth
         />
-      </div>
 
-      <BotaoPadrao>Criar Curso</BotaoPadrao>
-    </form>
+        <Button
+          variant="contained"
+          color="primary"
+          type="submit"
+          sx={{ alignSelf: "flex-start", px: 4, py: 1 }}
+        >
+          Criar Curso
+        </Button>
+      </Box>
+    </Container>
   );
 }

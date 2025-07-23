@@ -1,9 +1,9 @@
-type UserAPIRole = "PROFESSOR" | "ALUNO";
+type UserRole = "PROFESSOR" | "ALUNO";
 
 type UserAPIResponse = {
   idUsuario: string;
   nome: string;
   sobrenome: string;
-  login: string;
-  cargos: UserAPIRole[];
+  email: string;
+  role: UserRole;
 };

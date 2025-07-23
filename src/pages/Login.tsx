@@ -2,18 +2,28 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { useAuth } from "../hooks/useAuth";
+import {
+  Grid,
+  Paper,
+  Box,
+  TextField,
+  Button,
+  Typography,
+  Link,
+} from "@mui/material";
+import { ToastContainer, toast } from "react-toastify";
 
 type CustomJwtPayload = JwtPayload & {
-  roles?: string[];
+  role: string;
 };
 
 type Login = {
-  login: string;
+  email: string;
   senha: string;
 };
 
 export function Login() {
-  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const navigate = useNavigate();
   const { save } = useAuth();
@@ -21,7 +31,6 @@ export function Login() {
 
   async function login(loginDTO: Login) {
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     try {
       const response = await fetch("http://localhost:8080/auth/token", {
         method: "POST",
@@ -29,9 +38,7 @@ export function Login() {
         body: JSON.stringify(loginDTO),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao fazer login");
-      }
+      if (!response.ok) throw new Error("Erro ao fazer login");
 
       const token = await response.text();
       localStorage.setItem("token", token);
@@ -49,16 +56,16 @@ export function Login() {
           },
         }
       );
-      const reponseJson = await responseInfoUser.json();
-      if (!response.ok) {
-        throw new Error("Erro ao obter informações do usuário");
-      }
 
+      if (!responseInfoUser.ok) throw new Error("Erro ao buscar informações");
+
+      const reponseJson = await responseInfoUser.json();
       save(reponseJson);
-      navigate("/");
+      toast.success("Login realizado com sucesso!");
+      setTimeout(() => navigate("/"), 2000);
     } catch (error) {
       console.error(error);
-      alert("Erro ao fazer login");
+      toast.error("Erro ao fazer login");
     } finally {
       setLoading(false);
     }
@@ -66,76 +73,97 @@ export function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const loginDTO: Login = { login: nome, senha: senha };
+    const loginDTO: Login = { email, senha };
     await login(loginDTO);
   };
 
   return (
-    <div className="flex h-screen">
-      {/* Formulário */}
-      <div className="w-1/2 flex items-center justify-center bg-gray-100">
-        <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold">Bem-vindo!</h1>
-          <p className="text-gray-500">Faça login para continuar</p>
+    <Grid container sx={{ height: "100vh" }}>
+      {/* Coluna esquerda */}
+      <Grid
+        size={{ xs: 12, md: 6 }}
+        sx={{
+          bgcolor: "grey.100",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Paper elevation={3} sx={{ width: "100%", maxWidth: 400, p: 4 }}>
+          <Typography variant="h5" gutterBottom>
+            Bem-vindo!
+          </Typography>
+          <Typography variant="body2" color="textSecondary" gutterBottom>
+            Faça login para continuar
+          </Typography>
 
-          <form onSubmit={handleSubmit} className="mt-6">
-            <div className="mb-4">
-              <label className="block text-sm font-medium">E-mail</label>
-              <input
-                onChange={(e) => setNome(e.target.value)}
-                type="text"
-                className="w-full p-2 border rounded-md"
-                placeholder="Digite seu e-mail"
-                value={nome}
+          <form onSubmit={handleSubmit}>
+            <Box mt={2}>
+              <TextField
+                label="E-mail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                fullWidth
+                required
               />
-            </div>
+            </Box>
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium">Senha</label>
-              <input
-                onChange={(e) => setSenha(e.target.value)}
+            <Box mt={2}>
+              <TextField
+                label="Senha"
                 type="password"
-                className="w-full p-2 border rounded-md"
-                placeholder="Digite sua senha"
                 value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                fullWidth
+                required
               />
-            </div>
+            </Box>
 
-            <button
+            <Button
               type="submit"
-              className={`w-full flex items-center justify-center gap-2 py-2 rounded-md text-white transition-all 
-                ${
-                  loading
-                    ? "bg-gray-700 cursor-not-allowed"
-                    : "bg-black hover:bg-gray-800"
-                }`}
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ mt: 3 }}
               disabled={loading}
             >
               {loading ? "Entrando..." : "Entrar"}
-            </button>
+            </Button>
           </form>
-          <div>
-            <p className="mt-4 text-center text-sm">
-              Ainda não tem uma conta?{" "}
-              <a
-                href="#"
-                className="font-bold"
-                onClick={() => navigate("/register")}
-              >
-                Cadastre-se
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
 
-      <div className="w-1/2 flex items-center justify-center bg-white">
-        <img
+          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+            Ainda não tem uma conta?{" "}
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => navigate("/register")}
+            >
+              Cadastre-se
+            </Link>
+          </Typography>
+        </Paper>
+      </Grid>
+
+      {/* Coluna direita */}
+      <Grid
+        size={{ xs: 12, md: 6 }}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          bgcolor: "white",
+        }}
+      >
+        <Box
+          component="img"
           src="/Login.png"
-          alt="Placeholder Image"
-          className="w-full h-full object-cover"
+          alt="Imagem de login"
+          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-      </div>
-    </div>
+      </Grid>
+
+      <ToastContainer position="top-center" theme="dark" autoClose={1500} />
+    </Grid>
   );
 }

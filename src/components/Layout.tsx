@@ -1,17 +1,24 @@
-import { useState } from "react";
+import Header from "./Header";
 import { Outlet } from "react-router";
-import { Sidebar } from "./Sidebar";
+import { Footer } from "./Footer";
+import { Box } from "@mui/material";
 
 export function Layout() {
-  const [open, setOpen] = useState<boolean>(true);
-
   return (
-    <div className="grid grid-cols-[auto_auto_1fr] h-screen">
-      <Sidebar open={open} setOpen={setOpen} />
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+      }}
+    >
+      <Header />
 
-      <main className="p-4 transition-all duration-300 overflow-y-auto">
+      <Box component="main" sx={{ flex: 1, px: 2 }}>
         <Outlet />
-      </main>
-    </div>
+      </Box>
+
+      <Footer />
+    </Box>
   );
 }
