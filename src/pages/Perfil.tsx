@@ -1,71 +1,60 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import { usePerfil } from '../hooks/usePerfil';
+
 
 export default function Perfil() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { perfil: usuario, erro } = usePerfil();
 
-  // Dados do professor simulados
-  const professor = {
-    nome: 'Dudu',
-    email: 'dudu@escola.com',
-    telefone: '(11) 40028922',
-    departamento: 'Matemática',
-    formacao: 'Licenciatura em Matemática',
-    endereco: 'Sumé-PB',
-    fotoUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=1887&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-  };
+
 
   function handleEditarPerfil() {
     navigate('/editar-perfil');
   }
 
   function handleSair() {
-    // Logout real aqui
-    navigate('/login');
+    logout();               // Limpa token e estado
+    navigate('/');     // Redireciona
   }
+
+  if (erro) return <div className="text-center text-red-600 p-6">{erro}</div>;
+  if (!usuario) return null;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-6">
       <div className="bg-white rounded-xl shadow-md p-8 max-w-3xl w-full">
-        <h1 className="text-2xl font-bold mb-8 text-center">Perfil do Professor</h1>
+        <h1 className="text-2xl font-bold mb-8 text-center">Perfil</h1>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:gap-8">
-          {/* Foto no canto superior esquerdo */}
           <img
-            src={professor.fotoUrl}
-            alt="Foto do Professor"
+            src={usuario.fotoUrl}
+            alt="Foto"
             className="w-32 h-32 rounded-full object-cover shadow-md mb-6 sm:mb-0"
           />
 
-          {/* Informações ao lado */}
           <div className="flex-1">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8 text-gray-700">
               <div>
                 <h3 className="font-semibold text-gray-900">Nome</h3>
-                <p>{professor.nome}</p>
+                <p>{usuario.nome} {usuario.sobrenome}</p>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Email</h3>
-                <p>{professor.email}</p>
+                <p>{usuario.email}</p>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Telefone</h3>
-                <p>{professor.telefone}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Departamento</h3>
-                <p>{professor.departamento}</p>
+                <p>{usuario.telefone}</p>
               </div>
               <div>
                 <h3 className="font-semibold text-gray-900">Formação</h3>
-                <p>{professor.formacao}</p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Endereço</h3>
-                <p>{professor.endereco}</p>
+                <p>{usuario.formacao}</p>
               </div>
             </div>
 
-            {/* Botões */}
             <div className="mt-8 flex gap-4">
               <button
                 onClick={handleEditarPerfil}

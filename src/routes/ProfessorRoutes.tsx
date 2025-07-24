@@ -1,10 +1,10 @@
 import { Route, Routes } from "react-router";
 import { Layout } from "../components/Layout";
-import { Home } from "lucide-react";
 import { NewCourseForm } from "../pages/CriarNovoCurso";
 import { CursoDetalhes } from "../pages/CursoDetalhes";
 import { NotFound } from "../pages/NotFound";
 import Perfil from "../pages/Perfil";
+import { Home } from "../pages/Home";
 
 export function ProfessorRoutes() {
   return (
