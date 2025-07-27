@@ -67,6 +67,7 @@ export function Register() {
       const corpoAluno = {
         email: data.email,
         senha: data.senha,
+        graduacao: "Graduação de " + data.nome,
         nome: data.nome,
         sobrenome: data.sobrenome,
         dataDeNascimento: new Date(data.dataDeNascimento),
