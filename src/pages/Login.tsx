@@ -2,15 +2,6 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { jwtDecode, JwtPayload } from "jwt-decode";
 import { useAuth } from "../hooks/useAuth";
-import {
-  Grid,
-  Paper,
-  Box,
-  TextField,
-  Button,
-  Typography,
-  Link,
-} from "@mui/material";
 import { ToastContainer, toast } from "react-toastify";
 
 type CustomJwtPayload = JwtPayload & {
@@ -28,6 +19,7 @@ export function Login() {
   const navigate = useNavigate();
   const { save } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   async function login(loginDTO: Login) {
     setLoading(true);
@@ -78,92 +70,99 @@ export function Login() {
   };
 
   return (
-    <Grid container sx={{ height: "100vh" }}>
-      {/* Coluna esquerda */}
-      <Grid
-        size={{ xs: 12, md: 6 }}
-        sx={{
-          bgcolor: "grey.100",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Paper elevation={3} sx={{ width: "100%", maxWidth: 400, p: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            Bem-vindo!
-          </Typography>
-          <Typography variant="body2" color="textSecondary" gutterBottom>
-            Faça login para continuar
-          </Typography>
-
-          <form onSubmit={handleSubmit}>
-            <Box mt={2}>
-              <TextField
-                label="E-mail"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                fullWidth
-                required
-              />
-            </Box>
-
-            <Box mt={2}>
-              <TextField
-                label="Senha"
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                fullWidth
-                required
-              />
-            </Box>
-
-            <Button
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12">
+      <div className="max-w-md w-full mx-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-graduation-cap text-white text-2xl"></i>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Bem-vindo de volta!
+            </h2>
+            <p className="text-gray-600">
+              Entre na sua conta para continuar aprendendo
+            </p>
+          </div>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent  text-sm"
+                  placeholder="seu@email.com"
+                  required
+                />
+                <i className="fas fa-envelope absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Senha
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm pr-12"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  <i
+                    className={`fas ${
+                      showPassword ? "fa-eye-slash" : "fa-eye"
+                    }`}
+                  ></i>
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-600">Lembrar-me</span>
+              </label>
+              <a
+                href="#"
+                className="text-sm text-blue-600 hover:text-blue-700 cursor-pointer"
+              >
+                Esqueci minha senha
+              </a>
+            </div>
+            <button
               type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              sx={{ mt: 3 }}
-              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200 !rounded-button whitespace-nowrap cursor-pointer"
             >
-              {loading ? "Entrando..." : "Entrar"}
-            </Button>
+              Entrar
+            </button>
           </form>
-
-          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-            Ainda não tem uma conta?{" "}
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate("/register")}
-            >
-              Cadastre-se
-            </Link>
-          </Typography>
-        </Paper>
-      </Grid>
-
-      {/* Coluna direita */}
-      <Grid
-        size={{ xs: 12, md: 6 }}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "white",
-        }}
-      >
-        <Box
-          component="img"
-          src="/Login.png"
-          alt="Imagem de login"
-          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </Grid>
-
+          <div className="mt-8 text-center">
+            <p className="text-gray-600">
+              Não tem uma conta?{" "}
+              <button
+                onClick={() => navigate("/register")}
+                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+              >
+                Cadastre-se gratuitamente
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
       <ToastContainer position="top-center" theme="dark" autoClose={1500} />
-    </Grid>
+    </div>
   );
 }
