@@ -64,7 +64,10 @@ export function Register() {
       });
       const cargo = data.tipoUsuario === "professor" ? "PROFESSOR" : "ALUNO";
 
-      const corpoAluno = {
+      // === ALTERAÇÃO AQUI ===
+      const endpoint = "http://localhost:8080/auth/register";
+
+      const corpoParaEnvio = {
         email: data.email,
         senha: data.senha,
         graduacao: "Graduação de " + data.nome,
@@ -73,20 +76,7 @@ export function Register() {
         dataDeNascimento: new Date(data.dataDeNascimento),
         role: cargo,
       };
-      const corpoProfessor = {
-        email: data.email,
-        senha: data.senha,
-        nome: data.nome,
-        sobrenome: data.sobrenome,
-        dataDeNascimento: new Date(data.dataDeNascimento),
-        role: cargo,
-      };
-      const endpoint =
-        data.tipoUsuario === "aluno"
-          ? "http://localhost:8080/auth/registerAluno"
-          : "http://localhost:8080/auth/registerProfessor";
-      const corpoParaEnvio =
-        data.tipoUsuario === "aluno" ? corpoAluno : corpoProfessor;
+      // =======================
 
       await fetch(endpoint, {
         method: "POST",
