@@ -1,20 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import AddIcon from "@mui/icons-material/Add";
-import {
-  Container,
-  Typography,
-  CircularProgress,
-  Alert,
-  Box,
-  List,
-  ListItem,
-  Paper,
-  ListItemText,
-  Button,
-  TextField,
-} from "@mui/material";
+import { Link } from "react-router";
+import { capitalizar } from "../utils/capitalizar";
 
 type CursoDTO = {
   id: string;
@@ -22,6 +10,20 @@ type CursoDTO = {
   descricao?: string;
   cargaHoraria: number;
   professorId?: string;
+  cor: string;
+};
+
+const colorClasses: Record<string, string> = {
+  blue: "bg-blue-500",
+  red: "bg-red-500",
+  green: "bg-green-500",
+  yellow: "bg-yellow-500",
+  purple: "bg-purple-500",
+  pink: "bg-pink-500",
+  indigo: "bg-indigo-500",
+  teal: "bg-teal-500",
+  orange: "bg-orange-500",
+  gray: "bg-gray-500",
 };
 
 export function Home() {
@@ -55,120 +57,151 @@ export function Home() {
   }, [session]);
 
   if (isLoadingSession) {
-    return (
-      <Box mt={6} textAlign="center">
-        <CircularProgress />
-        <Typography mt={2}>Verificando sessão...</Typography>
-      </Box>
-    );
+    return <h1></h1>;
   }
 
   if (!session) {
-    return (
-      <Container>
-        <Alert severity="error" sx={{ mt: 6, textAlign: "center" }}>
-          Usuário não autenticado.
-        </Alert>
-      </Container>
-    );
+    return <h1></h1>;
   }
 
   const cursosFiltrados = cursos.filter((curso) =>
     curso.nome.toLowerCase().includes(filtroNome.toLowerCase())
   );
 
+  console.log(cursos);
+
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
-        flexWrap="wrap"
-        gap={2}
-      >
-        <TextField
-          label="Filtrar por nome"
-          variant="outlined"
-          size="small"
-          value={filtroNome}
-          onChange={(e) => setFiltroNome(e.target.value)}
-        />
-
-        {session.role === "PROFESSOR" && (
-          <Button
-            startIcon={<AddIcon />}
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/novo-curso")}
-            sx={{ borderRadius: 4, px: 3, py: 1 }}
-          >
-            Criar Novo Curso
-          </Button>
-        )}
-      </Box>
-
-      {loading ? (
-        <Box textAlign="center" mt={4}>
-          <CircularProgress />
-          <Typography mt={2} color="text.secondary">
-            Carregando cursos...
-          </Typography>
-        </Box>
-      ) : cursosFiltrados.length === 0 ? (
-        <Typography color="text.secondary">Nenhum curso encontrado.</Typography>
-      ) : (
-        <List>
-          {cursosFiltrados.map((curso) => (
-            <ListItem
-              key={curso.id}
-              disablePadding
-              sx={{ mb: 2 }}
-              onClick={() => navigate(`/curso/${curso.id}`)}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 py-12">
+      <div className="max-w-7xl mx-auto px-6">
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            Dashboard do {capitalizar(session.role)}
+          </h1>
+          <p className="text-gray-600 text-lg">
+            {session.role === "ALUNO"
+              ? "Acesse seus cursos e acompanhe seu progresso"
+              : "Gerencie seus cursos e acompanhe o progresso dos alunos"}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                <i className="fas fa-book text-blue-600 text-xl"></i>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">
+                {cursos.length}
+              </span>
+            </div>
+            <h3 className="font-semibold text-gray-900">Cursos Ativos</h3>
+            <p className="text-sm text-gray-600">+{cursos.length} este mês</p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+                <i className="fas fa-users text-green-600 text-xl"></i>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">0</span>
+            </div>
+            <h3 className="font-semibold text-gray-900">
+              {session.role === "PROFESSOR"
+                ? "Alunos Ativos"
+                : "Questionários feitos"}
+            </h3>
+            <p className="text-sm text-gray-600">+0 esta semana</p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                <i className="fas fa-chart-line text-purple-600 text-xl"></i>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">0%</span>
+            </div>
+            <h3 className="font-semibold text-gray-900">Engajamento</h3>
+            <p className="text-sm text-gray-600">+0% vs mês anterior</p>
+          </div>
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                <i className="fas fa-trophy text-orange-600 text-xl"></i>
+              </div>
+              <span className="text-2xl font-bold text-gray-900">0</span>
+            </div>
+            <h3 className="font-semibold text-gray-900">
+              {session.role === "PROFESSOR"
+                ? "Pontos Dados"
+                : "Pontos Recebidos"}{" "}
+            </h3>
+            <p className="text-sm text-gray-600">Esta semana</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {cursos.map((course, index) => (
+            <Link
+              to={`/curso/${course.id}`}
+              key={index}
+              className="block bg-white rounded-2xl p-6 shadow-lg border border-gray-100 hover:shadow-xl transition-shadow cursor-pointer no-underline"
             >
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 2,
-                  width: "100%",
-                  cursor: "pointer",
-                  transition: "0.2s",
-                  "&:hover": {
-                    boxShadow: 6,
-                  },
-                }}
-              >
-                <ListItemText
-                  primary={
-                    <Typography variant="h6" fontWeight={600}>
-                      {curso.nome}
-                    </Typography>
-                  }
-                  secondary={
-                    <>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        component="span"
-                      >
-                        {curso.descricao || "Sem descrição"}
-                      </Typography>
-                      <br />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        component="span"
-                      >
-                        Carga horária: {curso.cargaHoraria}h
-                      </Typography>
-                    </>
-                  }
-                />
-              </Paper>
-            </ListItem>
+              <div className="flex items-start justify-between mb-4">
+                <div
+                  className={`w-12 h-12 bg-${course.cor}-100 rounded-xl flex items-center justify-center`}
+                >
+                  <i
+                    className={`fas fa-book-open text-${course.cor}-600 text-xl`}
+                  ></i>
+                </div>
+                {session.role === "ALUNO" && (
+                  <div className="flex items-center space-x-1">
+                    <i className="fas fa-trophy text-yellow-400"></i>
+                    <span className="text-sm font-medium">1°</span>
+                  </div>
+                )}
+              </div>
+              <h3 className="font-bold text-gray-900 text-lg mb-2">
+                {course.nome}
+              </h3>
+              <div className="flex items-center space-x-4 mb-4">
+                <div className="flex items-center space-x-1">
+                  <i className="fas fa-users text-gray-400 text-sm"></i>
+                  <span className="text-sm text-gray-600">32 alunos</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <i className="fas fa-chart-line text-gray-400 text-sm"></i>
+                  <span className="text-sm text-gray-600">78%</span>
+                </div>
+              </div>
+              {session.role === "ALUNO" && (
+                <div className="mb-4">
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-600">Progresso Médio</span>
+                    <span className="font-medium">78%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className={`bg-${course.cor}-500 h-2 rounded-full`}
+                      style={{ width: `78%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
+              <div className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-4 rounded-xl font-medium transition-colors !rounded-button whitespace-nowrap text-center">
+                {session.role === "ALUNO"
+                  ? "Continuar curso"
+                  : "Gerenciar curso"}
+              </div>
+            </Link>
           ))}
-        </List>
+        </div>
+      </div>
+      {session.role === "PROFESSOR" && (
+        <button
+          onClick={() => navigate("/novo-curso")}
+          className="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 cursor-pointer"
+        >
+          <i className="fas fa-plus text-xl"></i>
+        </button>
       )}
-    </Container>
+    </div>
   );
 }

@@ -6,7 +6,7 @@ type PerfilDTO = {
   nome: string;
   email: string;
   telefone: string;
-    sobrenome?: string;
+  sobrenome?: string;
   fotoUrl: string;
   formacao?: string; // pode não existir no aluno
   dataDeNascimento: Date;
