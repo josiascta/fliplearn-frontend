@@ -32,11 +32,11 @@ type VideoAulaDTO = {
   descricao: string;
   url: string;
   thumbnailUrl: string;
-  duracao: string;
   dataPublicacao: string;
   dataAtualizacao: string;
   professorId: number;
   moduloId: number;
+  minutos: string;
 };
 type ModuloDTO = {
   id: number;
@@ -58,6 +58,7 @@ export function CursoDetalhes() {
   const [videoaulasDoModulo, setVideoaulasDoModulo] = useState<
     Record<number, VideoAulaDTO[]>
   >({});
+  const [minutos, setMinutos] = useState<number | "">("");
 
   const [msgGerarQuestoes, setMsgGerarQuestoes] = useState("");
 
@@ -77,6 +78,7 @@ export function CursoDetalhes() {
     dataFim: "",
   });
   const [msgModulo, setMsgModulo] = useState("");
+  const [porcentagemSave, setPorcentagem] = useState(0);
 
   const [assistidas, setAssistidas] = useState<Set<number>>(new Set());
 
@@ -151,6 +153,7 @@ export function CursoDetalhes() {
       dataAtualizacao: new Date().toISOString(),
       professorId,
       moduloId,
+      minutos,
     };
 
     fetch(`http://localhost:8080/video-aulas`, {
@@ -175,23 +178,49 @@ export function CursoDetalhes() {
   };
 
   const handleVideoFinalizado = (videoId: number) => {
-    setAssistidas((prev) => new Set(prev).add(videoId));
+    setAssistidas((prev) => {
+      const novoSet = new Set(prev).add(videoId);
 
-    // Se quiser salvar no backend:
-    fetch(`http://localhost:8080/progresso/assistir/${videoId}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        // preencha com os campos esperados pela entidade Progresso
-        usuarioId: session?.idUsuario,
-        cursoId: curso?.id,
-        videoAulaId: videoId,
-        progresso: 1,
-        dataConclusao: new Date().toUTCString(),
-      }),
+      // Encontrar o módulo ao qual o vídeo pertence
+      let moduloRelacionado: number | null = null;
+      for (const [moduloId, aulas] of Object.entries(videoaulasDoModulo)) {
+        if (aulas.some((aula) => aula.id === videoId)) {
+          moduloRelacionado = Number(moduloId);
+          break;
+        }
+      }
+
+      if (moduloRelacionado !== null) {
+        const totalAulas = videoaulasDoModulo[moduloRelacionado]?.length || 0;
+        const aulasConcluidas =
+          videoaulasDoModulo[moduloRelacionado]?.filter((v) =>
+            novoSet.has(v.id)
+          ).length || 0;
+
+        const novaPorcentagem =
+          totalAulas > 0 ? (aulasConcluidas / totalAulas) * 100 : 0;
+
+        // Enviar progresso ao backend
+        fetch(`http://localhost:8080/progresso/assistir/${videoId}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            alunoId: session?.idUsuario,
+            cursoId: curso?.id,
+            moduloId: moduloRelacionado,
+            id: 1,
+            dataConclusao: new Date().toISOString(),
+            percentualConcluido: novaPorcentagem,
+          }),
+        }).catch(() => {
+          console.error("Erro ao salvar progresso no backend.");
+        });
+      }
+
+      return novoSet;
     });
   };
 
@@ -420,6 +449,14 @@ export function CursoDetalhes() {
                   onChange={(e) => setUrl(e.target.value)}
                 />
                 <TextField
+                  label="Duração (minutos)"
+                  type="number"
+                  inputProps={{ step: "0.1", min: 0 }}
+                  value={minutos}
+                  onChange={(e) => setMinutos(Number(e.target.value))}
+                />
+
+                <TextField
                   label="URL da thumbnail"
                   value={thumbnailUrl}
                   onChange={(e) => setThumbnailUrl(e.target.value)}
@@ -504,10 +541,15 @@ export function CursoDetalhes() {
                           <Typography color="text.secondary">
                             {v.descricao}
                           </Typography>
+
                           <Typography variant="body2">
                             Publicado em:{" "}
                             {new Date(v.dataPublicacao).toLocaleString()}
                           </Typography>
+                          <Typography variant="body2">
+                            Duração: {v.minutos} min
+                          </Typography>
+
                           <ReactPlayer
                             controls
                             width="100%"
