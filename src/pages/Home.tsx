@@ -89,39 +89,49 @@ export function Home() {
               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                 <i className="fas fa-book text-blue-600 text-xl"></i>
               </div>
-              <span className="text-2xl font-bold text-gray-900">12</span>
+              <span className="text-2xl font-bold text-gray-900">
+                {cursos.length}
+              </span>
             </div>
             <h3 className="font-semibold text-gray-900">Cursos Ativos</h3>
-            <p className="text-sm text-gray-600">+2 este mês</p>
+            <p className="text-sm text-gray-600">+{cursos.length} este mês</p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                 <i className="fas fa-users text-green-600 text-xl"></i>
               </div>
-              <span className="text-2xl font-bold text-gray-900">248</span>
+              <span className="text-2xl font-bold text-gray-900">0</span>
             </div>
-            <h3 className="font-semibold text-gray-900">Alunos Ativos</h3>
-            <p className="text-sm text-gray-600">+15 esta semana</p>
+            <h3 className="font-semibold text-gray-900">
+              {session.role === "PROFESSOR"
+                ? "Alunos Ativos"
+                : "Questionários feitos"}
+            </h3>
+            <p className="text-sm text-gray-600">+0 esta semana</p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                 <i className="fas fa-chart-line text-purple-600 text-xl"></i>
               </div>
-              <span className="text-2xl font-bold text-gray-900">87%</span>
+              <span className="text-2xl font-bold text-gray-900">0%</span>
             </div>
             <h3 className="font-semibold text-gray-900">Engajamento</h3>
-            <p className="text-sm text-gray-600">+5% vs mês anterior</p>
+            <p className="text-sm text-gray-600">+0% vs mês anterior</p>
           </div>
           <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100">
             <div className="flex items-center justify-between mb-4">
               <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                 <i className="fas fa-trophy text-orange-600 text-xl"></i>
               </div>
-              <span className="text-2xl font-bold text-gray-900">1.2k</span>
+              <span className="text-2xl font-bold text-gray-900">0</span>
             </div>
-            <h3 className="font-semibold text-gray-900">Pontos Dados</h3>
+            <h3 className="font-semibold text-gray-900">
+              {session.role === "PROFESSOR"
+                ? "Pontos Dados"
+                : "Pontos Recebidos"}{" "}
+            </h3>
             <p className="text-sm text-gray-600">Esta semana</p>
           </div>
         </div>
@@ -143,7 +153,7 @@ export function Home() {
                 {session.role === "ALUNO" && (
                   <div className="flex items-center space-x-1">
                     <i className="fas fa-trophy text-yellow-400"></i>
-                    <span className="text-sm font-medium">5°</span>
+                    <span className="text-sm font-medium">1°</span>
                   </div>
                 )}
               </div>
