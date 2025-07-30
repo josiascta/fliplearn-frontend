@@ -1,22 +1,25 @@
-import {
-  Box,
-  Container,
-  Typography,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  CircularProgress,
-  Alert,
-  Stack,
-  LinearProgress,
-} from "@mui/material";
-import { useParams } from "react-router";
-import { useEffect, useState } from "react";
-import { useAuth } from "../hooks/useAuth";
-import ReactPlayer from "react-player";
-import { Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  LinearProgress,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { useEffect, useState } from "react";
+import ReactPlayer from "react-player";
+import { useParams } from "react-router";
+import { useAuth } from "../hooks/useAuth";
+import { string } from "zod";
 
 type CursoDTO = {
   id: string;
@@ -47,12 +50,26 @@ type ModuloDTO = {
   cursoId: number;
 };
 
+type AlunoDTO = {
+  idUsuario: number;
+  nome: string;
+  sobrenome: string;
+  telefone: string;
+  email: string;
+  dataDeNascimento: string;
+  formacao: string;
+};
+
 export function CursoDetalhes() {
   const { id } = useParams();
   const { session, isLoadingSession } = useAuth();
   const [curso, setCurso] = useState<CursoDTO | null>(null);
   const [tabIndex, setTabIndex] = useState(0);
-  const [idAluno, setIdAluno] = useState("");
+  const [emailAluno, setEmailAluno] = useState("");
+  const [alunoEncontrado, setAlunoEncontrado] = useState<AlunoDTO | null>(null);
+  const [buscarErro, setBuscarErro] = useState("");
+  const [alunosCurso, setAlunosCurso] = useState<any[]>([]);
+
   const [adicionarMsg, setAdicionarMsg] = useState("");
   const [videoaulas, setVideoaulas] = useState<VideoAulaDTO[]>([]);
   const [videoaulasDoModulo, setVideoaulasDoModulo] = useState<
@@ -136,7 +153,41 @@ export function CursoDetalhes() {
       .catch((err) =>
         console.error("Erro ao buscar módulos e videoaulas:", err)
       );
+
+    fetch(`http://localhost:8080/cursos/${id}/alunos`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setAlunosCurso(data))
+      .catch((err) => console.error("Erro ao buscar alunos do curso:", err));
   }, [id]);
+
+  const buscarAlunoPorEmail = () => {
+    if (!emailAluno.trim()) return;
+
+    fetch(
+      `http://localhost:8080/aluno/email/${encodeURIComponent(emailAluno)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error("Aluno não encontrado");
+        return res.json();
+      })
+      .then((data) => {
+        setAlunoEncontrado(data);
+        setBuscarErro("");
+      })
+      .catch(() => {
+        setAlunoEncontrado(null);
+        setBuscarErro("Aluno não encontrado.");
+      });
+  };
 
   const handleAddVideoaula = () => {
     if (!novoTitulo || !url) {
@@ -191,9 +242,9 @@ export function CursoDetalhes() {
       }
 
       if (moduloRelacionado !== null) {
-        const totalAulas = videoaulasDoModulo[moduloRelacionado]?.length || 0;
+        const totalAulas = videoaulas?.length || 0;
         const aulasConcluidas =
-          videoaulasDoModulo[moduloRelacionado]?.filter((v) =>
+          videoaulas?.filter((v) =>
             novoSet.has(v.id)
           ).length || 0;
 
@@ -208,10 +259,10 @@ export function CursoDetalhes() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            id: 1,
             alunoId: session?.idUsuario,
             cursoId: curso?.id,
             moduloId: moduloRelacionado,
-            id: 1,
             dataConclusao: new Date().toISOString(),
             percentualConcluido: novaPorcentagem,
           }),
@@ -296,18 +347,22 @@ export function CursoDetalhes() {
   };
 
   const handleAddAluno = () => {
-    if (!idAluno.trim()) return;
+    if (!alunoEncontrado) return;
 
-    fetch(`http://localhost:8080/cursos/${id}/alunos/${idAluno}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
+    fetch(
+      `http://localhost:8080/cursos/${id}/alunos/${alunoEncontrado.idUsuario}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    )
       .then((res) => {
         if (res.ok) {
           setAdicionarMsg("Aluno adicionado com sucesso.");
-          setIdAluno("");
+          setEmailAluno("");
+          setAlunoEncontrado(null);
         } else {
           throw new Error("Erro ao adicionar aluno.");
         }
@@ -360,8 +415,8 @@ export function CursoDetalhes() {
         <Tab label="Avisos" />
         <Tab label="Materiais" />
         <Tab label="Ranking" />
-        <Tab label="Módulos" />
-        {session.role === "PROFESSOR" && <Tab label="Video-Aulas" />}
+        <Tab label="Video-Aulas" />
+        {session.role === "PROFESSOR" && <Tab label="Módulos" />}
         {session.role === "PROFESSOR" && <Tab label="Opções do Curso" />}
       </Tabs>
 
@@ -484,6 +539,7 @@ export function CursoDetalhes() {
             </Box>
           )}
 
+
           {modulos.map((modulo) => {
             const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
             const total = videosDoModulo.length;
@@ -492,7 +548,21 @@ export function CursoDetalhes() {
             ).length;
             const porcentagem = total > 0 ? (concluido / total) * 100 : 0;
 
+            const totalCurso = videoaulas.length;
+            const concluidoCurso = videoaulas.filter((v) =>
+              assistidas.has(v.id)
+            ).length;
+            const porcentagemCurso = total > 0 ? (concluido / total) * 100 : 0;
+
             return (
+              <Box>
+                <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom>
+                      Progresso total: {concluidoCurso} de {totalCurso} (
+                      {Math.round(porcentagem)}%)
+                    </Typography>
+                    <LinearProgress variant="determinate" value={porcentagemCurso} />
+                  </Box>
               <Accordion key={modulo.id}>
                 <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
@@ -562,7 +632,7 @@ export function CursoDetalhes() {
                     </Stack>
                   )}
                 </AccordionDetails>
-              </Accordion>
+              </Accordion></Box>
             );
           })}
         </Box>
@@ -670,21 +740,79 @@ export function CursoDetalhes() {
 
           <Stack direction="row" spacing={2} alignItems="center" mt={2}>
             <TextField
-              label="ID do Aluno"
-              value={idAluno}
-              onChange={(e) => setIdAluno(e.target.value)}
+              label="E-mail do Aluno"
+              value={emailAluno}
+              onChange={(e) => setEmailAluno(e.target.value)}
               size="small"
             />
-            <Button variant="contained" onClick={handleAddAluno}>
-              Adicionar Aluno
+            <Button variant="outlined" onClick={buscarAlunoPorEmail}>
+              Buscar
             </Button>
           </Stack>
+
+          {buscarErro && (
+            <Typography color="error" mt={2}>
+              {buscarErro}
+            </Typography>
+          )}
+
+          {alunoEncontrado && (
+            <Box mt={2} p={2} border="1px solid #ccc" borderRadius={2}>
+              <Typography>
+                <strong>ID:</strong> {alunoEncontrado.idUsuario}
+              </Typography>
+              <Typography>
+                <strong>Nome:</strong> {alunoEncontrado.nome}
+              </Typography>
+              <Typography>
+                <strong>Email:</strong> {alunoEncontrado.email}
+              </Typography>
+
+              <Button
+                variant="contained"
+                onClick={handleAddAluno}
+                sx={{ mt: 2 }}
+              >
+                Confirmar Adição
+              </Button>
+            </Box>
+          )}
 
           {adicionarMsg && (
             <Typography mt={2} color="text.secondary">
               {adicionarMsg}
             </Typography>
           )}
+          <Box mt={4}>
+            <Typography variant="subtitle1" gutterBottom>
+              Alunos Matriculados
+            </Typography>
+
+            {alunosCurso.length === 0 ? (
+              <Typography color="text.secondary">
+                Nenhum aluno matriculado ainda.
+              </Typography>
+            ) : (
+              <Stack spacing={1} mt={2}>
+                {alunosCurso.map((aluno) => (
+                  <Box
+                    key={aluno.id}
+                    sx={{
+                      border: "1px solid #ddd",
+                      borderRadius: 2,
+                      p: 2,
+                      backgroundColor: "#fafafa",
+                    }}
+                  >
+                    <Typography fontWeight={600}>{aluno.nome}</Typography>
+                    <Typography color="text.secondary">
+                      {aluno.email}
+                    </Typography>
+                  </Box>
+                ))}
+              </Stack>
+            )}
+          </Box>
         </Box>
       )}
     </Container>
