@@ -11,6 +11,7 @@ type CursoDTO = {
   cargaHoraria: number;
   professorId?: string;
   cor: string;
+  quantidadeAlunos: number;
 };
 
 const colorClasses: Record<string, string> = {
@@ -32,6 +33,9 @@ export function Home() {
   const [loading, setLoading] = useState(true);
   const [filtroNome, setFiltroNome] = useState("");
   const navigate = useNavigate();
+  const [progressoCursos, setProgressoCursos] = useState<
+    Record<string, number>
+  >({});
 
   useEffect(() => {
     if (!session) return;
@@ -49,6 +53,31 @@ export function Home() {
       .then((res) => res.json())
       .then((data: CursoDTO[]) => {
         setCursos(data);
+        if (session.role === "ALUNO") {
+          const promises = data.map((curso) =>
+            fetch(
+              `http://localhost:8080/progresso/${session.idUsuario}/curso/${curso.id}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+              }
+            )
+              .then((res) => (res.ok ? res.json() : null))
+              .then((progresso) => ({
+                cursoId: curso.id,
+                progresso: progresso?.percentualConcluido || 0,
+              }))
+          );
+
+          Promise.all(promises).then((resultados) => {
+            const progressoMap: Record<string, number> = {};
+            resultados.forEach((item) => {
+              if (item) progressoMap[item.cursoId] = item.progresso;
+            });
+            setProgressoCursos(progressoMap);
+          });
+        }
       })
       .catch((err) => {
         console.error("Erro ao buscar cursos:", err);
@@ -163,23 +192,23 @@ export function Home() {
               <div className="flex items-center space-x-4 mb-4">
                 <div className="flex items-center space-x-1">
                   <i className="fas fa-users text-gray-400 text-sm"></i>
-                  <span className="text-sm text-gray-600">32 alunos</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <i className="fas fa-chart-line text-gray-400 text-sm"></i>
-                  <span className="text-sm text-gray-600">78%</span>
+                  <span className="text-sm text-gray-600">
+                    {course.quantidadeAlunos} alunos
+                  </span>
                 </div>
               </div>
               {session.role === "ALUNO" && (
                 <div className="mb-4">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-gray-600">Progresso Médio</span>
-                    <span className="font-medium">78%</span>
+                    <span className="font-medium">
+                      {progressoCursos[course.id] || 0}%
+                    </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className={`bg-${course.cor}-500 h-2 rounded-full`}
-                      style={{ width: `78%` }}
+                      style={{ width: `${progressoCursos[course.id] || 0}%` }}
                     ></div>
                   </div>
                 </div>

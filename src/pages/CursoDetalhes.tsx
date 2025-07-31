@@ -19,7 +19,6 @@ import { useEffect, useState } from "react";
 import ReactPlayer from "react-player";
 import { useParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
-import { string } from "zod";
 
 type CursoDTO = {
   id: string;
@@ -60,6 +59,15 @@ type AlunoDTO = {
   formacao: string;
 };
 
+type ProgressoDTO = {
+  id: number;
+  alunoId: number;
+  cursoId: number;
+  percentualConcluido: number;
+  dataUltimaAtividade: string;
+  status: string;
+};
+
 export function CursoDetalhes() {
   const { id } = useParams();
   const { session, isLoadingSession } = useAuth();
@@ -88,6 +96,10 @@ export function CursoDetalhes() {
   const [professorId, setProfessorId] = useState(session?.idUsuario); // ou defina fixo
   const [moduloId, setModuloId] = useState(0); // ajustar conforme seu curso
   const [modulos, setModulos] = useState<ModuloDTO[]>([]);
+  const [modulosConcluidos, setModulosConcluidos] = useState<Set<number>>(
+    new Set()
+  );
+
   const [novoModulo, setNovoModulo] = useState({
     nome: "",
     descricao: "",
@@ -95,7 +107,7 @@ export function CursoDetalhes() {
     dataFim: "",
   });
   const [msgModulo, setMsgModulo] = useState("");
-  const [porcentagemSave, setPorcentagem] = useState(0);
+  const [progresso, setProgresso] = useState<ProgressoDTO>();
 
   const [assistidas, setAssistidas] = useState<Set<number>>(new Set());
 
@@ -120,6 +132,15 @@ export function CursoDetalhes() {
       .then((data) => setVideoaulas(data))
       .catch((err) => console.error("Erro ao buscar videoaulas:", err));
 
+    fetch(`http://localhost:8080/progresso/${session?.idUsuario}/curso/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((progresso) => setProgresso(progresso));
+
+      
     // Após carregar módulos
     fetch(`http://localhost:8080/modulos/curso/${id}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
@@ -230,28 +251,40 @@ export function CursoDetalhes() {
 
   const handleVideoFinalizado = (videoId: number) => {
     setAssistidas((prev) => {
-      const novoSet = new Set(prev).add(videoId);
+      const novoSet = new Set(prev);
+      novoSet.add(videoId); // marca como assistido
 
-      // Encontrar o módulo ao qual o vídeo pertence
-      let moduloRelacionado: number | null = null;
-      for (const [moduloId, aulas] of Object.entries(videoaulasDoModulo)) {
-        if (aulas.some((aula) => aula.id === videoId)) {
-          moduloRelacionado = Number(moduloId);
-          break;
-        }
+      const totalAulas = videoaulas?.length || 0;
+      const aulasConcluidas =
+        videoaulas?.filter((v) => novoSet.has(v.id)).length || 0;
+      const novaPorcentagem =
+        totalAulas > 0 ? (aulasConcluidas / totalAulas) * 100 : 0;
+
+      // Concluir módulo se todas as aulas foram assistidas
+      if (videoaulasDoModulo) {
+        Object.entries(videoaulasDoModulo).forEach(([moduloIdStr, aulas]) => {
+          const moduloId = Number(moduloIdStr);
+          const totalAulasModulo = aulas.length;
+          const aulasAssistidasModulo = aulas.filter((v) =>
+            novoSet.has(v.id)
+          ).length;
+
+          if (
+            aulasAssistidasModulo === totalAulasModulo &&
+            !modulosConcluidos.has(moduloId)
+          ) {
+            concluirModulo(moduloId);
+            setModulosConcluidos((prev) => new Set(prev).add(moduloId));
+          }
+        });
       }
 
-      if (moduloRelacionado !== null) {
-        const totalAulas = videoaulas?.length || 0;
-        const aulasConcluidas =
-          videoaulas?.filter((v) =>
-            novoSet.has(v.id)
-          ).length || 0;
+      // Atualizar backend com progresso do vídeo assistido
+      const moduloRelacionado = Object.entries(videoaulasDoModulo).find(
+        ([_, aulas]) => aulas.some((aula) => aula.id === videoId)
+      )?.[0];
 
-        const novaPorcentagem =
-          totalAulas > 0 ? (aulasConcluidas / totalAulas) * 100 : 0;
-
-        // Enviar progresso ao backend
+      if (moduloRelacionado) {
         fetch(`http://localhost:8080/progresso/assistir/${videoId}`, {
           method: "POST",
           headers: {
@@ -262,7 +295,7 @@ export function CursoDetalhes() {
             id: 1,
             alunoId: session?.idUsuario,
             cursoId: curso?.id,
-            moduloId: moduloRelacionado,
+            moduloId: Number(moduloRelacionado),
             dataConclusao: new Date().toISOString(),
             percentualConcluido: novaPorcentagem,
           }),
@@ -346,6 +379,25 @@ export function CursoDetalhes() {
       .catch(() => setMsgModulo("Erro ao cadastrar módulo."));
   };
 
+  const concluirModulo = async (moduloId: number) => {
+    fetch(`http://localhost:8080/progresso/concluirModulo/${moduloId}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: 1,
+        alunoId: session?.idUsuario,
+        cursoId: curso?.id,
+        moduloId: moduloId,
+        dataConclusao: new Date().toISOString(),
+      }),
+    }).catch(() => {
+      console.error("Erro ao salvar progresso no backend.");
+    });
+  };
+
   const handleAddAluno = () => {
     if (!alunoEncontrado) return;
 
@@ -406,6 +458,16 @@ export function CursoDetalhes() {
       <Typography variant="h4" fontWeight={600} gutterBottom>
         {curso.nome}
       </Typography>
+      <Box mb={2}>
+        <Typography variant="h6">Status: {progresso?.status}</Typography>
+        <LinearProgress
+          variant="determinate"
+          value={progresso?.percentualConcluido}
+        />
+        <Typography variant="body2" color="text.secondary">
+          {progresso?.percentualConcluido.toFixed(0)}% concluído
+        </Typography>
+      </Box>
 
       <Tabs
         value={tabIndex}
@@ -477,10 +539,6 @@ export function CursoDetalhes() {
 
       {tabIndex === 3 && (
         <Box>
-          <Typography variant="h6" gutterBottom>
-            Video Aulas
-          </Typography>
-
           {session.role === "PROFESSOR" && (
             <Box mt={4}>
               <Typography variant="subtitle1" gutterBottom>
@@ -539,100 +597,73 @@ export function CursoDetalhes() {
             </Box>
           )}
 
-
           {modulos.map((modulo) => {
             const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
-            const total = videosDoModulo.length;
-            const concluido = videosDoModulo.filter((v) =>
-              assistidas.has(v.id)
-            ).length;
-            const porcentagem = total > 0 ? (concluido / total) * 100 : 0;
-
-            const totalCurso = videoaulas.length;
-            const concluidoCurso = videoaulas.filter((v) =>
-              assistidas.has(v.id)
-            ).length;
-            const porcentagemCurso = total > 0 ? (concluido / total) * 100 : 0;
-
             return (
               <Box>
-                <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" gutterBottom>
-                      Progresso total: {concluidoCurso} de {totalCurso} (
-                      {Math.round(porcentagem)}%)
+                <Accordion key={modulo.id}>
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls={`panel-content-${modulo.id}`}
+                    id={`panel-header-${modulo.id}`}
+                  >
+                    <Typography variant="h6" color="primary">
+                      {modulo.id + " - " + modulo.nome}
                     </Typography>
-                    <LinearProgress variant="determinate" value={porcentagemCurso} />
-                  </Box>
-              <Accordion key={modulo.id}>
-                <AccordionSummary
-                  expandIcon={<ExpandMoreIcon />}
-                  aria-controls={`panel-content-${modulo.id}`}
-                  id={`panel-header-${modulo.id}`}
-                >
-                  <Typography variant="h6" color="primary">
-                    {modulo.id + " - " + modulo.nome}
-                  </Typography>
-                </AccordionSummary>
+                  </AccordionSummary>
 
-                <AccordionDetails>
-                  <Box sx={{ mb: 2 }}>
-                    <Typography variant="body2" gutterBottom>
-                      Progresso: {concluido} de {total} (
-                      {Math.round(porcentagem)}%)
+                  <AccordionDetails>
+                    <Typography color="text.secondary" gutterBottom>
+                      {modulo.descricao}
                     </Typography>
-                    <LinearProgress variant="determinate" value={porcentagem} />
-                  </Box>
 
-                  <Typography color="text.secondary" gutterBottom>
-                    {modulo.descricao}
-                  </Typography>
+                    {videosDoModulo.length === 0 ? (
+                      <Typography color="text.secondary">
+                        Nenhuma videoaula neste módulo.
+                      </Typography>
+                    ) : (
+                      <Stack spacing={2}>
+                        {videosDoModulo.map((v) => (
+                          <Box
+                            key={v.id}
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 1,
+                              border: "1px solid #ccc",
+                              borderRadius: 2,
+                              p: 2,
+                            }}
+                          >
+                            <Typography variant="subtitle1">
+                              {v.titulo}
+                            </Typography>
+                            <Typography color="text.secondary">
+                              {v.descricao}
+                            </Typography>
 
-                  {videosDoModulo.length === 0 ? (
-                    <Typography color="text.secondary">
-                      Nenhuma videoaula neste módulo.
-                    </Typography>
-                  ) : (
-                    <Stack spacing={2}>
-                      {videosDoModulo.map((v) => (
-                        <Box
-                          key={v.id}
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 1,
-                            border: "1px solid #ccc",
-                            borderRadius: 2,
-                            p: 2,
-                          }}
-                        >
-                          <Typography variant="subtitle1">
-                            {v.titulo}
-                          </Typography>
-                          <Typography color="text.secondary">
-                            {v.descricao}
-                          </Typography>
+                            <Typography variant="body2">
+                              Publicado em:{" "}
+                              {new Date(v.dataPublicacao).toLocaleString()}
+                            </Typography>
+                            <Typography variant="body2">
+                              Duração: {v.minutos} min
+                            </Typography>
 
-                          <Typography variant="body2">
-                            Publicado em:{" "}
-                            {new Date(v.dataPublicacao).toLocaleString()}
-                          </Typography>
-                          <Typography variant="body2">
-                            Duração: {v.minutos} min
-                          </Typography>
-
-                          <ReactPlayer
-                            controls
-                            width="100%"
-                            height="360px"
-                            src={`https://www.youtube.com/watch?v=${v.url}`}
-                            onEnded={() => handleVideoFinalizado(v.id)}
-                          />
-                        </Box>
-                      ))}
-                    </Stack>
-                  )}
-                </AccordionDetails>
-              </Accordion></Box>
+                            <ReactPlayer
+                              controls
+                              width="100%"
+                              height="360px"
+                              src={`https://www.youtube.com/watch?v=${v.url}`}
+                              onEnded={() => handleVideoFinalizado(v.id)}
+                            />
+                          </Box>
+                        ))}
+                      </Stack>
+                    )}
+                  </AccordionDetails>
+                </Accordion>
+              </Box>
             );
           })}
         </Box>
