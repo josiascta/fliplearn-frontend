@@ -1,30 +1,28 @@
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import {
-  Box,
-  Container,
-  Typography,
-  Tabs,
-  Tab,
-  Button,
-  TextField,
-  CircularProgress,
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
-  Stack,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
   LinearProgress,
+  Stack,
+  Tab,
+  Tabs,
+  TextField,
+  Typography,
 } from "@mui/material";
-import { useParams } from "react-router";
 import { useEffect, useState } from "react";
+import ReactPlayer from "react-player";
+import { useParams } from "react-router";
 import { useAuth } from "../hooks/useAuth";
 import ReactPlayer from "react-player";
 import { Accordion, AccordionSummary, AccordionDetails } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import React from "react";
 
-type MaterialDTO = {
-  id: number | string;
-  titulo: string;
-  url?: string;
-  descricao?: string;
-};
 
 type CursoDTO = {
   id: string;
@@ -40,11 +38,11 @@ type VideoAulaDTO = {
   descricao: string;
   url: string;
   thumbnailUrl: string;
-  duracao: string;
   dataPublicacao: string;
   dataAtualizacao: string;
   professorId: number;
   moduloId: number;
+  minutos: string;
 };
 type ModuloDTO = {
   id: number;
@@ -55,30 +53,24 @@ type ModuloDTO = {
   cursoId: number;
 };
 
-interface QuestionarioDTO {
-  id?: number; // opcional no momento da criação
-  titulo: string;
-  descricao: string;
-  categoriaId: number;
-  dataEntrega: string; // formato ISO, ex: '2025-07-31T15:00:00'
-  notificado: boolean;
-  alunoId?: number; // se for individual
-  moduloId: number;
-  dataPublicacao: string; // agora
-  questoesId: number[];
-}
-
 export function CursoDetalhes() {
   const { id } = useParams();
   const { session, isLoadingSession } = useAuth();
   const [curso, setCurso] = useState<CursoDTO | null>(null);
   const [tabIndex, setTabIndex] = useState(0);
-  const [idAluno, setIdAluno] = useState("");
+  const [emailAluno, setEmailAluno] = useState("");
+  const [alunoEncontrado, setAlunoEncontrado] = useState<AlunoDTO | null>(null);
+  const [buscarErro, setBuscarErro] = useState("");
+  const [alunosCurso, setAlunosCurso] = useState<any[]>([]);
+
   const [adicionarMsg, setAdicionarMsg] = useState("");
   const [videoaulas, setVideoaulas] = useState<VideoAulaDTO[]>([]);
   const [videoaulasDoModulo, setVideoaulasDoModulo] = useState<
     Record<number, VideoAulaDTO[]>
   >({});
+  const [minutos, setMinutos] = useState<number | "">("");
+
+  const [msgGerarQuestoes, setMsgGerarQuestoes] = useState("");
 
   const [novoTitulo, setNovoTitulo] = useState("");
   const [msgVideo, setMsgVideo] = useState("");
@@ -96,9 +88,9 @@ export function CursoDetalhes() {
     dataFim: "",
   });
   const [msgModulo, setMsgModulo] = useState("");
+  const [porcentagemSave, setPorcentagem] = useState(0);
 
   const [assistidas, setAssistidas] = useState<Set<number>>(new Set());
-
 
   useEffect(() => {
     if (!id) return;
@@ -155,7 +147,40 @@ export function CursoDetalhes() {
         console.error("Erro ao buscar módulos e videoaulas:", err)
       );
 
+    fetch(`http://localhost:8080/cursos/${id}/alunos`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => setAlunosCurso(data))
+      .catch((err) => console.error("Erro ao buscar alunos do curso:", err));
   }, [id]);
+
+  const buscarAlunoPorEmail = () => {
+    if (!emailAluno.trim()) return;
+
+    fetch(
+      `http://localhost:8080/aluno/email/${encodeURIComponent(emailAluno)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    )
+      .then((res) => {
+        if (!res.ok) throw new Error("Aluno não encontrado");
+        return res.json();
+      })
+      .then((data) => {
+        setAlunoEncontrado(data);
+        setBuscarErro("");
+      })
+      .catch(() => {
+        setAlunoEncontrado(null);
+        setBuscarErro("Aluno não encontrado.");
+      });
+  };
 
   const handleAddVideoaula = () => {
     if (!novoTitulo || !url) {
@@ -172,6 +197,7 @@ export function CursoDetalhes() {
       dataAtualizacao: new Date().toISOString(),
       professorId,
       moduloId,
+      minutos,
     };
 
     fetch(`http://localhost:8080/video-aulas`, {
@@ -196,7 +222,8 @@ export function CursoDetalhes() {
   };
 
   const handleVideoFinalizado = (videoId: number) => {
-    setAssistidas((prev) => new Set(prev).add(videoId));
+    setAssistidas((prev) => {
+      const novoSet = new Set(prev).add(videoId);
 
     // Se quiser salvar no backend:
     fetch(`http://localhost:8080/progresso/assistir/${videoId}`, {
@@ -216,109 +243,6 @@ export function CursoDetalhes() {
     });
 
   };
-  
-
-
- const [materiais, setMateriais] = useState<MaterialDTO[]>([]);
-  const [tituloMaterial, setTituloMaterial] = useState("");
-  const [msgMaterial, setMsgMaterial] = useState("");
-
-  // **2. Carrega materiais ao montar**
-  useEffect(() => {
-    carregarMateriais();
-  }, []);
-
-  // **3. Função GET /api/materiais**
-  const carregarMateriais = async () => {
-    try {
-      const res = await fetch("http://localhost:8080/api/materiais", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      if (res.ok) {
-        const lista: MaterialDTO[] = await res.json();
-        setMateriais(lista);
-      } else {
-        console.error("Falha ao buscar materiais:", res.status);
-      }
-    } catch (err) {
-      console.error("Erro ao carregar materiais:", err);
-    }
-  };
-
-  // **4. Upload de material e atualização da lista**
- const handleMaterialChange = async (
-  event: React.ChangeEvent<HTMLInputElement>
-) => {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  if (!tituloMaterial.trim()) {
-    setMsgMaterial("Por favor, preencha o título do material antes de enviar.");
-    return;
-  }
-
-  setMsgMaterial("Enviando material para o Drive...");
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("titulo", tituloMaterial);
-
-  try {
-    // 1) Upload ao Drive
-    const driveRes = await fetch("http://localhost:8080/api/arquivos/upload", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      body: formData,
-    });
-    const driveText = await driveRes.text();
-    console.log("Resposta /api/arquivos/upload:", driveRes.status, driveText);
-
-    if (!driveRes.ok) {
-      throw new Error(driveText || "Erro ao enviar material ao Drive");
-    }
-    if (!driveText) {
-      throw new Error("Nenhum JSON retornado do upload ao Drive");
-    }
-    const driveDTO: { id: number; titulo: string; link: string } = JSON.parse(driveText);
-
-    // 2) Persistência no seu controller de materiais
-    setMsgMaterial("Salvando material na base de dados...");
-    const salvarRes = await fetch("http://localhost:8080/api/materiais", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      body: JSON.stringify({
-        titulo: driveDTO.titulo,
-        link: driveDTO.link,
-        cursoId: Number(id),
-      }),
-    });
-    const salvarText = await salvarRes.text();
-    console.log("Resposta POST /api/materiais:", salvarRes.status, salvarText);
-
-    if (!salvarRes.ok) {
-      throw new Error(salvarText || "Erro ao salvar material no banco");
-    }
-    if (!salvarText) {
-      console.warn("Material salvo, mas sem JSON de retorno. Recarregando lista...");
-    } else {
-      // opcional aproveitar o DTO retornado:
-      try {
-        const salvoDTO: MaterialDTO = JSON.parse(salvarText);
-        setMateriais((prev) => [...prev, salvoDTO]);
-      } catch {
-        console.warn("Não foi possível parsear o JSON de SAVE, recarregando lista completa.");
-        await carregarMateriais();
-      }
-    }
-
-    setMsgMaterial("Material enviado e salvo com sucesso!");
-    setTituloMaterial("");
-  } catch (err: any) {
-    console.error(err);
-    setMsgMaterial(`Falha: ${err.message}`);
-  }
-};
   const [msgGerarQuestoes, setMsgGerarQuestoes] = useState("");
 
 // Função para enviar o arquivo para a API e receber as questões
@@ -326,26 +250,26 @@ const handleArquivoChange = async (event: React.ChangeEvent<HTMLInputElement>) =
   const file = event.target.files?.[0];
   if (!file) return;
 
-  setMsgGerarQuestoes("Processando arquivo, aguarde...");
+    setMsgGerarQuestoes("Processando arquivo, aguarde...");
 
-  const formData = new FormData();
-  formData.append("arquivo", file);
+    const formData = new FormData();
+    formData.append("arquivo", file);
 
   try {
     const response = await fetch("http://localhost:8080/api/educational-ai/gerar-questoes-doc", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${localStorage.getItem("token")}`,
-        
+        // Note que NÃO colocamos Content-Type, pois o browser define para multipart/form-data automaticamente
       },
       body: formData,
     });
 
-    if (!response.ok) {
-      throw new Error("Erro ao gerar questões");
-    }
+      if (!response.ok) {
+        throw new Error("Erro ao gerar questões");
+      }
 
-    const resultText = await response.text(); 
+    const resultText = await response.text(); // ou response.json() se for JSON
     setMsgGerarQuestoes(resultText);
   } catch (error) {
     setMsgGerarQuestoes("Falha ao gerar questões com IA.");
@@ -514,18 +438,22 @@ const handleGerarPdf = async () => {
 
 
   const handleAddAluno = () => {
-    if (!idAluno.trim()) return;
+    if (!alunoEncontrado) return;
 
-    fetch(`http://localhost:8080/cursos/${id}/alunos/${idAluno}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
+    fetch(
+      `http://localhost:8080/cursos/${id}/alunos/${alunoEncontrado.idUsuario}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    )
       .then((res) => {
         if (res.ok) {
           setAdicionarMsg("Aluno adicionado com sucesso.");
-          setIdAluno("");
+          setEmailAluno("");
+          setAlunoEncontrado(null);
         } else {
           throw new Error("Erro ao adicionar aluno.");
         }
@@ -570,18 +498,18 @@ const handleGerarPdf = async () => {
       {curso.nome}
     </Typography>
 
-    <Tabs
-      value={tabIndex}
-      onChange={(e, newValue) => setTabIndex(newValue)}
-      sx={{ mb: 4 }}
-    >
-      <Tab label="Avisos" />
-      <Tab label="Materiais" />
-      <Tab label="Ranking" />
-      <Tab label="Módulos" />
-      {session.role === "PROFESSOR" && <Tab label="Video-Aulas" />}
-      {session.role === "PROFESSOR" && <Tab label="Opções do Curso" />}
-    </Tabs>
+      <Tabs
+        value={tabIndex}
+        onChange={(e, newValue) => setTabIndex(newValue)}
+        sx={{ mb: 4 }}
+      >
+        <Tab label="Avisos" />
+        <Tab label="Materiais" />
+        <Tab label="Ranking" />
+        <Tab label="Módulos" />
+        {session.role === "PROFESSOR" && <Tab label="Video-Aulas" />}
+        {session.role === "PROFESSOR" && <Tab label="Opções do Curso" />}
+      </Tabs>
 
     {tabIndex === 0 && (
       <Box>
@@ -594,61 +522,26 @@ const handleGerarPdf = async () => {
       </Box>
     )}
 
-    {tabIndex === 1 && (
+     {tabIndex === 1 && (
   <Box>
     <Typography variant="h6" gutterBottom>
       Materiais
     </Typography>
-
-    {materiais.length === 0 ? (
-      <Typography color="text.secondary">
-        Nenhum material enviado.
-      </Typography>
-    ) : (
-      <Stack spacing={1} mt={2}>
-        {materiais.map((m) => (
-          <Box
-            key={m.id}
-            sx={{
-              border: "1px solid #ccc",
-              borderRadius: 1,
-              p: 1,
-            }}
-          >
-            <Typography fontWeight={600}>{m.titulo}</Typography>
-            {/* Exemplo: link para baixar */}
-            {m.url && (
-              <Typography variant="body2">
-                <a href={m.url} target="_blank" rel="noopener noreferrer">
-                  Baixar material
-                </a>
-              </Typography>
-            )}
-          </Box>
-        ))}
-      </Stack>
-    )}
+    <Typography color="text.secondary">
+      Nenhum material enviado.
+    </Typography>
 
     {session.role === "PROFESSOR" && (
       <Stack direction="row" spacing={2} mt={2} alignItems="center">
-        <TextField
-          label="Título do Material"
-          value={tituloMaterial}
-          onChange={(e) => setTituloMaterial(e.target.value)}
-          size="small"
-          sx={{ width: 250 }}
-        />
-        <Button variant="contained" component="label">
+        <Button variant="contained">
           Adicionar Material
-          <input
-            type="file"
-            hidden
-            accept=".pdf,.doc,.docx,.ppt,.pptx"
-            onChange={handleMaterialChange}
-          />
         </Button>
 
-        <Button variant="outlined" component="label">
+        {/* Botão para abrir seletor de arquivo */}
+        <Button
+          variant="outlined"
+          component="label"
+        >
           Gerar questões com IA
           <input
             type="file"
@@ -660,194 +553,167 @@ const handleGerarPdf = async () => {
       </Stack>
     )}
 
-   {questoesArray.length > 0 && (
-  <Box mt={3}>
-    <Typography variant="h6" gutterBottom>
-      Questões Geradas por IA
-    </Typography>
+    {msgGerarQuestoes && (
+      <Typography mt={2} color="text.secondary" whiteSpace="pre-line">
+        {msgGerarQuestoes}
+      </Typography>
+    )}
+  </Box>
+)}
 
-    <Stack spacing={2}>
-      {questoesArray.map((questao) => (
-        <Box
-          key={questao.id}
-          sx={{
-            p: 2,
-            border: "1px solid #ccc",
-            borderRadius: 2,
-            backgroundColor: "#f9f9f9",
-            boxShadow: 1,
-          }}
-        >
-          <Typography variant="body1" color="text.primary">
-            {questao.texto}
+      {tabIndex === 2 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Ranking
+          </Typography>
+          <Typography color="text.secondary">
+            Ranking não disponível.
           </Typography>
         </Box>
-      ))}
-    </Stack>
+      )}
 
-    <Stack direction="row" spacing={2} mt={3}>
-      <Button variant="contained" color="primary" onClick={() => handleAplicarQuiz(questoesArray)}>
-        Aplicar como Quiz
-      </Button>
-      <Button variant="outlined" color="secondary" onClick={handleGerarPdf}>
-        Gerar Documento (PDF)
-      </Button>
-    </Stack>
-  </Box>
-)}
+      
+      {tabIndex === 3 && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Video Aulas
+          </Typography>
 
+          {session.role === "PROFESSOR" && (
+            <Box mt={4}>
+              <Typography variant="subtitle1" gutterBottom>
+                Adicionar Video Aula
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  label="Título"
+                  value={novoTitulo}
+                  onChange={(e) => setNovoTitulo(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="Descrição"
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                />
+                <TextField
+                  label="ID do vídeo (Ex: 9PRNZD19KDU)"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <TextField
+                  label="URL da thumbnail"
+                  value={thumbnailUrl}
+                  onChange={(e) => setThumbnailUrl(e.target.value)}
+                />
+                <TextField
+                  label=""
+                  type="datetime-local"
+                  value={dataPublicacao}
+                  onChange={(e) => setDataPublicacao(e.target.value)}
+                />
+                <TextField
+                  label="Módulo ID"
+                  type="number"
+                  value={moduloId}
+                  onChange={(e) => setModuloId(Number(e.target.value))}
+                />
 
-  </Box>
-)}
-
-    {tabIndex === 2 && (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Ranking
-        </Typography>
-        <Typography color="text.secondary">
-          Ranking não disponível.
-        </Typography>
-      </Box>
-    )}
-
-    {tabIndex === 3 && (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Video Aulas
-        </Typography>
-
-        {session.role === "PROFESSOR" && (
-          <Box mt={4}>
-            <Typography variant="subtitle1" gutterBottom>
-              Adicionar Video Aula
-            </Typography>
-            <Stack spacing={2}>
-              <TextField
-                label="Título"
-                value={novoTitulo}
-                onChange={(e) => setNovoTitulo(e.target.value)}
-                fullWidth
-              />
-              <TextField
-                label="Descrição"
-                value={descricao}
-                onChange={(e) => setDescricao(e.target.value)}
-              />
-              <TextField
-                label="ID do vídeo (Ex: 9PRNZD19KDU)"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-              />
-              <TextField
-                label="URL da thumbnail"
-                value={thumbnailUrl}
-                onChange={(e) => setThumbnailUrl(e.target.value)}
-              />
-              <TextField
-                label=""
-                type="datetime-local"
-                value={dataPublicacao}
-                onChange={(e) => setDataPublicacao(e.target.value)}
-              />
-              <TextField
-                label="Módulo ID"
-                type="number"
-                value={moduloId}
-                onChange={(e) => setModuloId(Number(e.target.value))}
-              />
-
-              <Button variant="contained" onClick={handleAddVideoaula}>
-                Cadastrar Video Aula
-              </Button>
-              {msgVideo && (
-                <Typography color="text.secondary">{msgVideo}</Typography>
-              )}
-            </Stack>
-          </Box>
-        )}
-
-        {modulos.map((modulo) => {
-          const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
-          const total = videosDoModulo.length;
-          const concluido = videosDoModulo.filter((v) => assistidas.has(v.id)).length;
-          const porcentagem = total > 0 ? (concluido / total) * 100 : 0;
-
-          return (
-            <Accordion key={modulo.id}>
-              <AccordionSummary
-                expandIcon={<ExpandMoreIcon />}
-                aria-controls={`panel-content-${modulo.id}`}
-                id={`panel-header-${modulo.id}`}
-              >
-                <Typography variant="h6" color="primary">
-                  {modulo.id + " - " + modulo.nome}
-                </Typography>
-              </AccordionSummary>
-
-              <AccordionDetails>
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" gutterBottom>
-                    Progresso: {concluido} de {total} ({Math.round(porcentagem)}%)
-                  </Typography>
-                  <LinearProgress variant="determinate" value={porcentagem} />
-                </Box>
-
-                <Typography color="text.secondary" gutterBottom>
-                  {modulo.descricao}
-                </Typography>
-
-                {videosDoModulo.length === 0 ? (
-                  <Typography color="text.secondary">
-                    Nenhuma videoaula neste módulo.
-                  </Typography>
-                ) : (
-                  <Stack spacing={2}>
-                    {videosDoModulo.map((v) => (
-                      <Box
-                        key={v.id}
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 1,
-                          border: "1px solid #ccc",
-                          borderRadius: 2,
-                          p: 2,
-                        }}
-                      >
-                        <Typography variant="subtitle1">
-                          {v.titulo}
-                        </Typography>
-                        <Typography color="text.secondary">
-                          {v.descricao}
-                        </Typography>
-                        <Typography variant="body2">
-                          Publicado em:{" "}
-                          {new Date(v.dataPublicacao).toLocaleString()}
-                        </Typography>
-                        <ReactPlayer
-                          controls
-                          width="100%"
-                          height="360px"
-                          src={`https://www.youtube.com/watch?v=${v.url}`}
-                          onEnded={() => handleVideoFinalizado(v.id)}
-                        />
-                      </Box>
-                    ))}
-                  </Stack>
+                <Button variant="contained" onClick={handleAddVideoaula}>
+                  Cadastrar Video Aula
+                </Button>
+                {msgVideo && (
+                  <Typography color="text.secondary">{msgVideo}</Typography>
                 )}
-              </AccordionDetails>
-            </Accordion>
-          );
-        })}
-      </Box>
-    )}
+              </Stack>
+            </Box>
+          )}
 
-    {tabIndex === 4 && session.role === "PROFESSOR" && (
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Gerenciar Módulos
-        </Typography>
+          {modulos.map((modulo) => {
+            const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
+            const total = videosDoModulo.length;
+            const concluido = videosDoModulo.filter((v) => assistidas.has(v.id)).length;
+            const porcentagem = total > 0 ? (concluido / total) * 100 : 0;
+
+
+            return (
+              <Accordion key={modulo.id}>
+                <AccordionSummary
+                  expandIcon={<ExpandMoreIcon />}
+                  aria-controls={`panel-content-${modulo.id}`}
+                  id={`panel-header-${modulo.id}`}
+                >
+                  <Typography variant="h6" color="primary">
+                    {modulo.id + " - " + modulo.nome}
+                  </Typography>
+                </AccordionSummary>
+
+                <AccordionDetails>
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" gutterBottom>
+                      Progresso: {concluido} de {total} ({Math.round(porcentagem)}%)
+                    </Typography>
+                    <LinearProgress variant="determinate" value={porcentagem} />
+                  </Box>
+
+                  
+                  <Typography color="text.secondary" gutterBottom>
+                    {modulo.descricao}
+                  </Typography>
+
+                  {videosDoModulo.length === 0 ? (
+                    
+                    <Typography color="text.secondary">
+                      Nenhuma videoaula neste módulo.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={2}>
+                      {videosDoModulo.map((v) => (
+                        <Box
+                          key={v.id}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                            border: "1px solid #ccc",
+                            borderRadius: 2,
+                            p: 2,
+                          }}
+                        >
+                          <Typography variant="subtitle1">
+                            {v.titulo}
+                          </Typography>
+                          <Typography color="text.secondary">
+                            {v.descricao}
+                          </Typography>
+                          <Typography variant="body2">
+                            Publicado em:{" "}
+                            {new Date(v.dataPublicacao).toLocaleString()}
+                          </Typography>
+                          <ReactPlayer
+                            controls
+                            width="100%"
+                            height="360px"
+                            src={`https://www.youtube.com/watch?v=${v.url}`}
+                            onEnded={() => handleVideoFinalizado(v.id)}
+                          />
+                        </Box>
+                      ))}
+                    </Stack>
+                  )}
+                </AccordionDetails>
+              </Accordion>
+            );
+          })}
+        </Box>
+      )}
+
+      
+      {tabIndex === 4 && session.role === "PROFESSOR" && (
+        <Box>
+          <Typography variant="h6" gutterBottom>
+            Gerenciar Módulos
+          </Typography>
 
         <Typography variant="subtitle1" mt={2}>
           Cadastrar Novo Módulo
@@ -944,25 +810,26 @@ const handleGerarPdf = async () => {
           Opções do Curso
         </Typography>
 
-        <Stack direction="row" spacing={2} alignItems="center" mt={2}>
-          <TextField
-            label="ID do Aluno"
-            value={idAluno}
-            onChange={(e) => setIdAluno(e.target.value)}
-            size="small"
-          />
-          <Button variant="contained" onClick={handleAddAluno}>
-            Adicionar Aluno
-          </Button>
-        </Stack>
+          <Stack direction="row" spacing={2} alignItems="center" mt={2}>
+            <TextField
+              label="ID do Aluno"
+              value={idAluno}
+              onChange={(e) => setIdAluno(e.target.value)}
+              size="small"
+            />
+            <Button variant="contained" onClick={handleAddAluno}>
+              Adicionar Aluno
+            </Button>
+          </Stack>
 
-        {adicionarMsg && (
-          <Typography mt={2} color="text.secondary">
-            {adicionarMsg}
-          </Typography>
-        )}
-      </Box>
-    )}
-  </Container>
-);
-}
+          {adicionarMsg && (
+            <Typography mt={2} color="text.secondary">
+              {adicionarMsg}
+            </Typography>
+          )}
+        </Box>
+      )}
+      
+    </Container>
+  );
+} 

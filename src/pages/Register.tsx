@@ -2,19 +2,6 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { z, ZodError } from "zod";
 import { ToastContainer, toast } from "react-toastify";
-import {
-  Grid,
-  Paper,
-  Box,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Button,
-  Typography,
-  Link,
-} from "@mui/material";
 
 const loginSchema = z
   .object({
@@ -64,10 +51,9 @@ export function Register() {
       });
       const cargo = data.tipoUsuario === "professor" ? "PROFESSOR" : "ALUNO";
 
-      // === ALTERAÇÃO AQUI ===
-      const endpoint = "http://localhost:8080/auth/register";
+      console.log(data);
 
-      const corpoParaEnvio = {
+      const corpoAluno = {
         email: data.email,
         senha: data.senha,
         graduacao: "Graduação de " + data.nome,
@@ -76,7 +62,20 @@ export function Register() {
         dataDeNascimento: new Date(data.dataDeNascimento),
         role: cargo,
       };
-      // =======================
+      const corpoProfessor = {
+        email: data.email,
+        senha: data.senha,
+        nome: data.nome,
+        sobrenome: data.sobrenome,
+        dataDeNascimento: new Date(data.dataDeNascimento),
+        role: cargo,
+      };
+      const endpoint =
+        data.tipoUsuario === "aluno"
+          ? "http://localhost:8080/auth/registerAluno"
+          : "http://localhost:8080/auth/registerProfessor";
+      const corpoParaEnvio =
+        data.tipoUsuario === "aluno" ? corpoAluno : corpoProfessor;
 
       await fetch(endpoint, {
         method: "POST",
@@ -98,157 +97,180 @@ export function Register() {
   }
 
   return (
-    <Grid container sx={{ height: "100vh" }}>
-      {/* Coluna esquerda: formulário */}
-      <Grid
-        size={{ xs: 12, md: 6 }}
-        sx={{
-          bgcolor: "grey.100",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Paper elevation={3} sx={{ width: "100%", maxWidth: 400, p: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            {" "}
-            Criar uma Conta{" "}
-          </Typography>
-          <Typography variant="body2" color="textSecondary" gutterBottom>
-            {" "}
-            Cadastre-se para começar{" "}
-          </Typography>
-
-          <form onSubmit={onSubmit}>
-            <Grid container spacing={2}>
-              <Grid size={6}>
-                <TextField
-                  label="Nome"
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center py-12">
+      <div className="max-w-2xl w-full mx-4">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <i className="fas fa-user-plus text-white text-2xl"></i>
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">
+              Crie sua conta
+            </h2>
+            <p className="text-gray-600">
+              Junte-se à revolução educacional com IA
+            </p>
+          </div>
+          <form onSubmit={onSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome
+                </label>
+                <input
+                  type="text"
                   value={nome}
                   onChange={(e) => setNome(e.target.value)}
-                  fullWidth
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="Seu nome"
                   required
                 />
-              </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="Sobrenome"
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sobrenome
+                </label>
+                <input
+                  type="text"
                   value={sobrenome}
                   onChange={(e) => setSobrenome(e.target.value)}
-                  fullWidth
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="Seu sobrenome"
                   required
                 />
-              </Grid>
-            </Grid>
-
-            <Box mt={2}>
-              <TextField
-                label="E-mail"
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email
+              </label>
+              <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                fullWidth
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                placeholder="seu@email.com"
                 required
               />
-            </Box>
-
-            <Box mt={2}>
-              <FormControl fullWidth>
-                <InputLabel id="tipoUsuario-label">Tipo de Usuário</InputLabel>
-                <Select
-                  labelId="tipoUsuario-label"
-                  id="tipoUsuario"
-                  value={tipoUsuario}
-                  label="Tipo de Usuário"
-                  onChange={(e) =>
-                    setTipoUsuario(e.target.value as "aluno" | "professor")
-                  }
-                >
-                  <MenuItem value="aluno">Aluno</MenuItem>
-                  <MenuItem value="professor">Professor</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            <Box mt={2}>
-              <TextField
-                label="Data de Nascimento"
-                type="date"
-                value={dataDeNascimento}
-                onChange={(e) => setDataDeNascimento(e.target.value)}
-                fullWidth
-                required
-                InputLabelProps={{ shrink: true }}
-              />
-            </Box>
-
-            <Grid container spacing={2} sx={{ mt: 2 }}>
-              <Grid size={6}>
-                <TextField
-                  label="Senha"
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Senha
+                </label>
+                <input
                   type="password"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
-                  fullWidth
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="••••••••"
                   required
                 />
-              </Grid>
-              <Grid size={6}>
-                <TextField
-                  label="Confirmar Senha"
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirmar Senha
+                </label>
+                <input
                   type="password"
                   value={confirmSenha}
                   onChange={(e) => setConfirmSenha(e.target.value)}
-                  fullWidth
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  placeholder="••••••••"
                   required
                 />
-              </Grid>
-            </Grid>
-
-            <Button
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Usuário
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setTipoUsuario("aluno")}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      tipoUsuario === "aluno"
+                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <i className="fas fa-user-graduate text-lg mb-1"></i>
+                    <div className="text-sm font-medium">Aluno</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTipoUsuario("professor")}
+                    className={`p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                      tipoUsuario === "professor"
+                        ? "border-purple-500 bg-purple-50 text-purple-700"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <i className="fas fa-chalkboard-teacher text-lg mb-1"></i>
+                    <div className="text-sm font-medium">Professor</div>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data de Nascimento
+                </label>
+                <input
+                  type="date"
+                  value={dataDeNascimento}
+                  onChange={(e) => setDataDeNascimento(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex items-start">
+              <input
+                type="checkbox"
+                className="rounded border-gray-300 text-blue-600 focus:outline-none focus:ring-blue-500 mt-1"
+                required
+              />
+              <span className="ml-3 text-sm text-gray-600">
+                Eu concordo com os{" "}
+                <a
+                  href="#"
+                  className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                >
+                  Termos de Uso
+                </a>{" "}
+                e{" "}
+                <a
+                  href="#"
+                  className="text-blue-600 hover:text-blue-700 cursor-pointer"
+                >
+                  Política de Privacidade
+                </a>
+              </span>
+            </div>
+            <button
               type="submit"
-              variant="contained"
-              color="primary"
-              fullWidth
-              sx={{ mt: 3 }}
-              disabled={loading}
+              className="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-3 px-4 rounded-xl font-medium hover:from-green-600 hover:to-blue-700 transition-all duration-200 !rounded-button whitespace-nowrap cursor-pointer"
             >
-              {loading ? "Cadastrando..." : "Cadastrar"}
-            </Button>
+              Criar Conta
+            </button>
           </form>
-
-          <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-            Já tem uma conta?{" "}
-            <Link
-              component="button"
-              variant="body2"
-              onClick={() => navigate("/")}
-            >
-              Entrar
-            </Link>
-          </Typography>
-        </Paper>
-      </Grid>
-
-      {/* Coluna direita: imagem */}
-      <Grid
-        size={{ xs: 12, md: 6 }}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          bgcolor: "white",
-        }}
-      >
-        <Box
-          component="img"
-          src="/Login.png"
-          alt="Imagem de cadastro"
-          sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-        />
-      </Grid>
+          <div className="mt-8 text-center">
+            <p className="text-gray-600">
+              Já tem uma conta?{" "}
+              <button
+                onClick={() => navigate("/")}
+                className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
+              >
+                Faça login
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
 
       <ToastContainer position="top-center" theme="dark" autoClose={1500} />
-    </Grid>
+    </div>
   );
 }
