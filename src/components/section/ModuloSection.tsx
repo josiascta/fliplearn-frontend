@@ -1,22 +1,22 @@
 // src/components/ModulosSection.tsx
 
-import {
-  Box,
-  Button,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
 import { ModuloDTO } from "../types/types";
 
 type ModulosSectionProps = {
+  session: any;
   cursoId: string;
   modulos: ModuloDTO[];
   setModulos: (modulos: ModuloDTO[]) => void;
 };
 
-export function ModulosSection({ cursoId, modulos, setModulos }: ModulosSectionProps) {
+export function ModulosSection({
+  session,
+  cursoId,
+  modulos,
+  setModulos,
+}: ModulosSectionProps) {
   const [novoModulo, setNovoModulo] = useState({
     nome: "",
     descricao: "",
@@ -25,6 +25,7 @@ export function ModulosSection({ cursoId, modulos, setModulos }: ModulosSectionP
   });
 
   const [msgModulo, setMsgModulo] = useState("");
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   const handleAddModulo = () => {
     if (!novoModulo.nome || !novoModulo.dataInicio || !novoModulo.dataFim) {
@@ -64,69 +65,83 @@ export function ModulosSection({ cursoId, modulos, setModulos }: ModulosSectionP
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Gerenciar Módulos
-      </Typography>
+      {session.role === "PROFESSOR" && (
+        <Box>
+          <Button
+            variant="outlined"
+            onClick={() => setMostrarFormulario((prev) => !prev)}
+            sx={{ mb: 2 }}
+          >
+            {mostrarFormulario ? "Cancelar Cadastro" : "Adicionar Modulo"}
+          </Button>
+          {mostrarFormulario && (
+            <Box>
+              <Typography variant="subtitle1" mt={2}>
+                Cadastrar Novo Módulo
+              </Typography>
 
-      <Typography variant="subtitle1" mt={2}>
-        Cadastrar Novo Módulo
-      </Typography>
+              <Stack spacing={2} mt={2}>
+                <TextField
+                  label="Nome"
+                  fullWidth
+                  value={novoModulo.nome}
+                  onChange={(e) =>
+                    setNovoModulo((prev) => ({ ...prev, nome: e.target.value }))
+                  }
+                />
+                <TextField
+                  label="Descrição"
+                  fullWidth
+                  value={novoModulo.descricao}
+                  onChange={(e) =>
+                    setNovoModulo((prev) => ({
+                      ...prev,
+                      descricao: e.target.value,
+                    }))
+                  }
+                />
+                <TextField
+                  label="Data Início"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  value={novoModulo.dataInicio}
+                  onChange={(e) =>
+                    setNovoModulo((prev) => ({
+                      ...prev,
+                      dataInicio: e.target.value,
+                    }))
+                  }
+                />
+                <TextField
+                  label="Data Fim"
+                  type="date"
+                  InputLabelProps={{ shrink: true }}
+                  value={novoModulo.dataFim}
+                  onChange={(e) =>
+                    setNovoModulo((prev) => ({
+                      ...prev,
+                      dataFim: e.target.value,
+                    }))
+                  }
+                />
 
-      <Stack spacing={2} mt={2}>
-        <TextField
-          label="Nome"
-          fullWidth
-          value={novoModulo.nome}
-          onChange={(e) =>
-            setNovoModulo((prev) => ({ ...prev, nome: e.target.value }))
-          }
-        />
-        <TextField
-          label="Descrição"
-          fullWidth
-          value={novoModulo.descricao}
-          onChange={(e) =>
-            setNovoModulo((prev) => ({ ...prev, descricao: e.target.value }))
-          }
-        />
-        <TextField
-          label="Data Início"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={novoModulo.dataInicio}
-          onChange={(e) =>
-            setNovoModulo((prev) => ({ ...prev, dataInicio: e.target.value }))
-          }
-        />
-        <TextField
-          label="Data Fim"
-          type="date"
-          InputLabelProps={{ shrink: true }}
-          value={novoModulo.dataFim}
-          onChange={(e) =>
-            setNovoModulo((prev) => ({ ...prev, dataFim: e.target.value }))
-          }
-        />
+                <Button variant="contained" onClick={handleAddModulo}>
+                  Cadastrar Módulo
+                </Button>
+                {msgModulo && (
+                  <Typography color="text.secondary">{msgModulo}</Typography>
+                )}
+              </Stack>
+            </Box>
+          )}
+        </Box>
+      )}
 
-        <Button variant="contained" onClick={handleAddModulo}>
-          Cadastrar Módulo
-        </Button>
-        {msgModulo && (
-          <Typography color="text.secondary">{msgModulo}</Typography>
-        )}
-      </Stack>
-
-      <Box mt={4}>
-        <Typography variant="subtitle1" gutterBottom>
-          Módulos do Curso
-        </Typography>
-
+      <Box>
         {modulos.length === 0 ? (
-          <Typography color="text.secondary">
-            Nenhum módulo ainda.
-          </Typography>
+          <Typography color="text.secondary">Nenhum módulo ainda.</Typography>
         ) : (
-          <Stack spacing={2} mt={2}>
+          <Stack spacing={2}>
             {modulos.map((m) => (
               <Box
                 key={m.id}
@@ -137,9 +152,7 @@ export function ModulosSection({ cursoId, modulos, setModulos }: ModulosSectionP
                 }}
               >
                 <Typography fontWeight={600}>{m.nome}</Typography>
-                <Typography color="text.secondary">
-                  {m.descricao}
-                </Typography>
+                <Typography color="text.secondary">{m.descricao}</Typography>
                 <Typography variant="body2">
                   {m.dataInicio} até {m.dataFim}
                 </Typography>

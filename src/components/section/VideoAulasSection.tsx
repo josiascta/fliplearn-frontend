@@ -4,7 +4,11 @@ import {
   AccordionSummary,
   Box,
   Button,
+  FormControl,
+  InputLabel,
   LinearProgress,
+  MenuItem,
+  Select,
   Stack,
   TextField,
   Typography,
@@ -12,7 +16,12 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ReactPlayer from "react-player";
 import { useState } from "react";
-import { CursoDTO, ModuloDTO, ProgressoDTO, VideoAulaDTO } from "../types/types";
+import {
+  CursoDTO,
+  ModuloDTO,
+  ProgressoDTO,
+  VideoAulaDTO,
+} from "../types/types";
 
 // ajuste conforme onde você define os tipos
 
@@ -25,7 +34,7 @@ interface Props {
     React.SetStateAction<Record<number, VideoAulaDTO[]>>
   >;
   progresso?: ProgressoDTO;
-  videoaulas?: VideoAulaDTO[]
+  videoaulas?: VideoAulaDTO[];
 }
 
 export function VideoAulasSection({
@@ -34,20 +43,20 @@ export function VideoAulasSection({
   modulos,
   videoaulasDoModulo,
   progresso,
-  videoaulas
+  videoaulas,
 }: Props) {
   const [assistidas, setAssistidas] = useState<Set<number>>(new Set());
   const [msgVideo, setMsgVideo] = useState("");
   const [novoTitulo, setNovoTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [url, setUrl] = useState("");
-  const [thumbnailUrl, setThumbnailUrl] = useState("");
-  const [dataPublicacao, setDataPublicacao] = useState("");
-  const [moduloId, setModuloId] = useState(0);
+  const [, setDataPublicacao] = useState("");
+  const [moduloSelecionado, setModuloSelecionado] = useState<number | "">("");
   const [minutos, setMinutos] = useState<number | "">("");
   const [modulosConcluidos, setModulosConcluidos] = useState<Set<number>>(
     new Set()
   );
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
 
   const handleAddVideoaula = () => {
     if (!novoTitulo || !url) {
@@ -59,11 +68,10 @@ export function VideoAulasSection({
       titulo: novoTitulo,
       descricao,
       url,
-      thumbnailUrl,
-      dataPublicacao,
+      dataPublicacao: new Date().toISOString(),
       dataAtualizacao: new Date().toISOString(),
       professorId: session?.idUsuario,
-      moduloId,
+      moduloId: moduloSelecionado,
       minutos,
     };
 
@@ -84,7 +92,6 @@ export function VideoAulasSection({
         setNovoTitulo("");
         setDescricao("");
         setUrl("");
-        setThumbnailUrl("");
         setDataPublicacao("");
         setMinutos("");
       })
@@ -99,7 +106,7 @@ export function VideoAulasSection({
       novoSet.add(videoId); // marca como assistido
 
       const totalAulas = videoaulas?.length || 0;
-      
+
       const aulasConcluidas =
         videoaulas?.filter((v) => novoSet.has(v.id)).length || 0;
 
@@ -177,6 +184,15 @@ export function VideoAulasSection({
     <Box>
       {session.role === "PROFESSOR" && (
         <Box mt={4}>
+          <Button
+            variant="outlined"
+            onClick={() => setMostrarFormulario((prev) => !prev)}
+            sx={{ mb: 2 }}
+          >
+            {mostrarFormulario ? "Cancelar Cadastro" : "Adicionar Video Aula"}
+          </Button>
+        {mostrarFormulario && (
+          <Box>
           <Typography variant="subtitle1" gutterBottom>
             Adicionar Video Aula
           </Typography>
@@ -197,29 +213,22 @@ export function VideoAulasSection({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
             />
-            <TextField
-              label="Duração (minutos)"
-              type="number"
-              inputProps={{ step: "0.1", min: 0 }}
-              value={minutos}
-              onChange={(e) => setMinutos(Number(e.target.value))}
-            />
-            <TextField
-              label="URL da thumbnail"
-              value={thumbnailUrl}
-              onChange={(e) => setThumbnailUrl(e.target.value)}
-            />
-            <TextField
-              type="datetime-local"
-              value={dataPublicacao}
-              onChange={(e) => setDataPublicacao(e.target.value)}
-            />
-            <TextField
-              label="Módulo ID"
-              type="number"
-              value={moduloId}
-              onChange={(e) => setModuloId(Number(e.target.value))}
-            />
+            <FormControl fullWidth>
+              <InputLabel id="select-modulo-label">Módulo</InputLabel>
+              <Select
+                labelId="select-modulo-label"
+                value={moduloSelecionado}
+                label="Módulo"
+                onChange={(e) => setModuloSelecionado(Number(e.target.value))}
+              >
+                {modulos.map((modulo) => (
+                  <MenuItem key={modulo.id} value={modulo.id}>
+                    {modulo.nome}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
             <Button variant="contained" onClick={handleAddVideoaula}>
               Cadastrar Video Aula
             </Button>
@@ -227,10 +236,11 @@ export function VideoAulasSection({
               <Typography color="text.secondary">{msgVideo}</Typography>
             )}
           </Stack>
+          </Box>)}
         </Box>
       )}
 
-      {modulos.map((modulo) => {
+      {modulos.map((modulo, index) => {
         const videosDoModulo = videoaulasDoModulo[modulo.id] || [];
         const total = videosDoModulo.length;
         const concluido = videosDoModulo.filter((v) =>
@@ -242,7 +252,7 @@ export function VideoAulasSection({
           <Accordion key={modulo.id}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
               <Typography variant="h6" color="primary">
-                {modulo.id + " - " + modulo.nome}
+                {index + 1 + " - " + modulo.nome}
               </Typography>
             </AccordionSummary>
             <AccordionDetails>
@@ -280,9 +290,6 @@ export function VideoAulasSection({
                       <Typography variant="body2">
                         Publicado em:{" "}
                         {new Date(v.dataPublicacao).toLocaleString()}
-                      </Typography>
-                      <Typography variant="body2">
-                        Duração: {v.minutos} min
                       </Typography>
                       <ReactPlayer
                         controls

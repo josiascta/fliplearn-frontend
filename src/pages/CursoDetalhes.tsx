@@ -184,6 +184,7 @@ export function CursoDetalhes() {
 
       {tabIndex === 4 && session.role === "PROFESSOR" && (
         <ModulosSection
+        session={session}
           cursoId={id!}
           modulos={modulos}
           setModulos={setModulos}
