@@ -55,14 +55,16 @@ export function CursoDetalhes() {
       .then((res) => res.json())
       .then((data) => setVideoaulas(data))
       .catch((err) => console.error("Erro ao buscar videoaulas:", err));
-
-    fetch(`http://localhost:8080/progresso/${session?.idUsuario}/curso/${id}`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((progresso) => setProgresso(progresso));
+      
+    if(session?.role === "ALUNO"){
+      fetch(`http://localhost:8080/progresso/${session?.idUsuario}/curso/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((progresso) => setProgresso(progresso));
+    }
 
     // Após carregar módulos
     fetch(`http://localhost:8080/modulos/curso/${id}`, {
@@ -167,7 +169,7 @@ export function CursoDetalhes() {
         <MateriaisSection session={session} />
       )}
       {tabIndex === 2 && (
-        <RankingSection />
+        <RankingSection cursoId={id!} />
       )}
 
       {tabIndex === 3 && (

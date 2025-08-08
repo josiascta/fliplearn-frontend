@@ -46,3 +46,11 @@ export type ProgressoDTO = {
   dataUltimaAtividade: string;
   status: string;
 };
+
+export type RankingDTO = {
+
+        alunoId : number;
+        nomeAluno : string;
+        porcentagemProgresso: number;
+
+}
