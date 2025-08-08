@@ -14,24 +14,11 @@ type CursoDTO = {
   quantidadeAlunos: number;
 };
 
-const colorClasses: Record<string, string> = {
-  blue: "bg-blue-500",
-  red: "bg-red-500",
-  green: "bg-green-500",
-  yellow: "bg-yellow-500",
-  purple: "bg-purple-500",
-  pink: "bg-pink-500",
-  indigo: "bg-indigo-500",
-  teal: "bg-teal-500",
-  orange: "bg-orange-500",
-  gray: "bg-gray-500",
-};
 
 export function Home() {
   const { session, isLoadingSession } = useAuth();
   const [cursos, setCursos] = useState<CursoDTO[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filtroNome, setFiltroNome] = useState("");
+  const [, setLoading] = useState(true);
   const navigate = useNavigate();
   const [progressoCursos, setProgressoCursos] = useState<
     Record<string, number>
@@ -92,10 +79,6 @@ export function Home() {
   if (!session) {
     return <h1></h1>;
   }
-
-  const cursosFiltrados = cursos.filter((curso) =>
-    curso.nome.toLowerCase().includes(filtroNome.toLowerCase())
-  );
 
   console.log(cursos);
 

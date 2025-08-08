@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import { usePerfil } from "../hooks/usePerfil";
 
 export default function Perfil() {
   const { logout, session } = useAuth();
@@ -22,6 +21,11 @@ export default function Perfil() {
   const handleEdit = () => {
     setIsEditing(true);
     setEditedInfo({ ...userInfo });
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/");
   };
 
   const handleSave = () => {
@@ -236,7 +240,7 @@ export default function Perfil() {
                   Editar
                 </button>
                 <button
-                  onClick={logout}
+                  onClick={handleLogout}
                   className="!rounded-button whitespace-nowrap cursor-pointer bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-2.5 text-sm font-medium transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 flex items-center"
                 >
                   <i className="fas fa-sign-out-alt mr-2"></i>
