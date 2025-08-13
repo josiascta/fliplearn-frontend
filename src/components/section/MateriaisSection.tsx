@@ -2,6 +2,7 @@
 
 import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import React, { useState } from "react";
+import { ListaMateriais } from "./ListaMateriais";
 
 interface MateriaisSectionProps {
   session: UserAPIResponse;
@@ -130,6 +131,9 @@ export function MateriaisSection({ session }: MateriaisSectionProps) {
           {msgGerarQuestoes}
         </Typography>
       )}
+
+      <ListaMateriais/>
+
     </Box>
   );
 }
