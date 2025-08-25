@@ -23,6 +23,7 @@ import {
 } from "../../components/types/types";
 import { useAuth } from "../../hooks/useAuth";
 import { RankingSection } from "./sections/RankingSection";
+import { QuizSection } from "./sections/QuizSection";
 
 export function CursoDetalhes() {
   const { id } = useParams();
@@ -174,6 +175,7 @@ export function CursoDetalhes() {
         <Tab label="Video-Aulas" />
         {session.role === "PROFESSOR" && <Tab label="Módulos" />}
         {session.role === "PROFESSOR" && <Tab label="Opções do Curso" />}
+        <Tab label="Quiz" />
       </Tabs>
 
       {tabIndex === 0 && <AvisosSection cursoId={id!} />}
@@ -204,6 +206,9 @@ export function CursoDetalhes() {
       {tabIndex === 5 && session.role === "PROFESSOR" && (
         <CursoOpcoesSection cursoId={id!} />
       )}
+       {tabIndex === 6 && (
+  <QuizSection cursoId={id!} isProfessor={session.role === "PROFESSOR"} />
+)}
     </Container>
   );
 }

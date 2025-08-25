@@ -1,8 +1,13 @@
-// src/components/section/MateriaisSection.tsx
-
-import { Box, Button, Stack, TextField, Typography } from "@mui/material";
+import { 
+  Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, 
+  Stack, TextField, Typography 
+} from "@mui/material";
 import React, { useState } from "react";
 import { ListaMateriais } from "./ListaMateriais";
+import jsPDF from "jspdf";
+import { Delete } from "@mui/icons-material";
+import { InputAdornment, IconButton } from "@mui/material";
+import { DeleteIcon } from "lucide-react";
 
 interface MateriaisSectionProps {
   session: UserAPIResponse;
@@ -11,6 +16,9 @@ interface MateriaisSectionProps {
 export function MateriaisSection({ session }: MateriaisSectionProps) {
   const [msgGerarQuestoes, setMsgGerarQuestoes] = useState("");
   const [titulo, setTitulo] = useState("");
+  const [openDialog, setOpenDialog] = useState(false);
+  const [tipoQuestao, setTipoQuestao] = useState<"alternativas" | "abertas" | null>(null);
+  const [questoes, setQuestoes] = useState<string[]>([]);
 
   const handleArquivoChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -18,10 +26,16 @@ export function MateriaisSection({ session }: MateriaisSectionProps) {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setMsgGerarQuestoes("Processando arquivo, aguarde...");
+    if (!tipoQuestao) {
+      alert("Escolha o tipo de questão antes.");
+      return;
+    }
+
+    setMsgGerarQuestoes(`Processando arquivo para ${tipoQuestao}, aguarde...`);
 
     const formData = new FormData();
     formData.append("arquivo", file);
+    formData.append("tipo", tipoQuestao);
 
     try {
       const response = await fetch(
@@ -40,26 +54,36 @@ export function MateriaisSection({ session }: MateriaisSectionProps) {
       }
 
       const resultText = await response.text();
-      setMsgGerarQuestoes(resultText);
+
+      let linhas = resultText
+        .split("\n")
+        .map((q) => q.trim())
+        .filter((q) => q !== "");
+
+      // Remove linha de introdução da IA, se existir
+      if (linhas.length > 0 && linhas[0].startsWith("Aqui estão")) {
+        linhas = linhas.slice(1);
+      }
+
+      setQuestoes(linhas);
+      setMsgGerarQuestoes("");
+      setOpenDialog(false);
+      // Não zera tipoQuestao aqui
     } catch (error) {
+      console.error(error);
       setMsgGerarQuestoes("Falha ao gerar questões com IA.");
     }
   };
+
   const handleArquivo = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    // Você pode adaptar essa parte para coletar o título dinamicamente, por enquanto deixei fixo
-    if (!titulo) {
-      alert("Título é obrigatório.");
-      return;
-    }
 
     setMsgGerarQuestoes("Processando arquivo, aguarde...");
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("titulo", titulo); // importante: mesmo nome do @RequestParam
+    formData.append("titulo", titulo);
 
     try {
       const response = await fetch(
@@ -86,6 +110,72 @@ export function MateriaisSection({ session }: MateriaisSectionProps) {
     }
   };
 
+  const atualizarQuestao = (index: number, novoValor: string) => {
+    const novasQuestoes = [...questoes];
+    novasQuestoes[index] = novoValor;
+    setQuestoes(novasQuestoes);
+  };
+
+const gerarPDF = () => {
+  const doc = new jsPDF();
+
+  doc.setFontSize(20);
+  doc.text(titulo || "Questões", 105, 20, { align: "center" });
+
+  doc.setFontSize(12);
+  doc.text(`Professor(a): ${session.nome}`, 10, 30);
+  doc.text("Aluno(a): ___________________", 10, 36);
+
+  let yPos = 45;
+  const lineHeight = 7;
+  const maxY = 280;
+
+  questoes.forEach((q) => {
+    // Remove a parte da resposta (ex: "(A)" ou "Resposta: X")
+    const textoSemResposta = q.replace(/\(.*\)/, "").replace(/Resposta: .*/, "").trim();
+
+    if (!textoSemResposta) return;
+
+    const linhas = doc.splitTextToSize(textoSemResposta, 180);
+    if (yPos + linhas.length * lineHeight > maxY) {
+      doc.addPage();
+      yPos = 20;
+    }
+    doc.text(linhas, 10, yPos);
+    yPos += linhas.length * lineHeight + 2;
+  });
+
+  doc.save("questoes.pdf");
+};
+
+
+  const gerarPDFComGabarito = () => {
+    const doc = new jsPDF();
+
+    doc.setFontSize(20);
+    doc.text(titulo || "Questões", 105, 20, { align: "center" });
+
+    doc.setFontSize(12);
+    doc.text(`Professor(a): ${session.nome}`, 10, 30);
+    doc.text("Aluno(a): ___________________", 10, 36);
+
+    let yPos = 45;
+    const lineHeight = 7;
+    const maxY = 280;
+
+    questoes.forEach((q) => {
+      const linhas = doc.splitTextToSize(q, 180);
+      if (yPos + linhas.length * lineHeight > maxY) {
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.text(linhas, 10, yPos);
+      yPos += linhas.length * lineHeight + 2;
+    });
+
+    doc.save("questoes_gabarito.pdf");
+  };
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -95,45 +185,161 @@ export function MateriaisSection({ session }: MateriaisSectionProps) {
 
       {session.role === "PROFESSOR" && (
         <Stack direction="row" spacing={2} mt={2} alignItems="center">
-          <Button variant="contained" component="label">
-            Adicionar Material
-            <input
-              type="file"
-              hidden
-              accept=".doc,.docx,.pdf"
-              onChange={handleArquivo}
-            />
-          </Button>
-          
-
-          <Button variant="outlined" component="label">
-            Gerar questões com IA
-            <input
-              type="file"
-              hidden
-              accept=".doc,.docx,.pdf"
-              onChange={handleArquivoChange}
-            />
-          </Button>
-          
           <TextField
-            label="Título"
+            label="Título do Arquivo"
             value={titulo}
             onChange={(e) => setTitulo(e.target.value)}
-            fullWidth
           />
+
+          <Button
+            variant="contained"
+            component="label"
+            sx={{ backgroundColor: "#1976d2", "&:hover": { backgroundColor: "#1565c0" } }}
+          >
+            Adicionar Material
+            <input type="file" hidden accept=".doc,.docx,.pdf" onChange={handleArquivo} />
+          </Button>
+
+          <Button
+            variant="outlined"
+            sx={{ color: "#1976d2", borderColor: "#1976d2" }}
+            onClick={() => setOpenDialog(true)}
+          >
+            Gerar questões com IA
+          </Button>
         </Stack>
-        
       )}
 
-      {msgGerarQuestoes && (
-        <Typography mt={2} color="text.secondary" whiteSpace="pre-line">
-          {msgGerarQuestoes}
-        </Typography>
+     <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+  <DialogTitle>Escolha o tipo de questão</DialogTitle>
+  <DialogContent>
+    <Stack direction="column" spacing={2} mt={1}>
+      <Button
+        variant={tipoQuestao === "alternativas" ? "contained" : "outlined"}
+        onClick={() => setTipoQuestao("alternativas")}
+      >
+        Questões com alternativas
+      </Button>
+      <Button
+        variant={tipoQuestao === "abertas" ? "contained" : "outlined"}
+        onClick={() => setTipoQuestao("abertas")}
+      >
+        Questões abertas
+      </Button>
+
+      {tipoQuestao && (
+        <Button
+          variant="contained"
+          component="label"
+          sx={{
+            backgroundColor: "#6a5acd", // roxo azulado
+            "&:hover": { backgroundColor: "#5848b0" },
+          }}
+        >
+          Selecionar arquivo
+          <input
+            type="file"
+            hidden
+            accept=".doc,.docx,.pdf"
+            onChange={(e) => {
+              setMsgGerarQuestoes("Aguardando Questões..."); // exibe mensagem
+              handleArquivoChange(e); // chama o método existente
+            }}
+          />
+        </Button>
+      )}
+    </Stack>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setOpenDialog(false)}>Cancelar</Button>
+  </DialogActions>
+</Dialog>
+
+
+      {questoes.length > 0 && (
+  <Box mt={2} p={2} border="1px solid #ccc" borderRadius="8px" bgcolor="#f9f9f9">
+    {/* Título dentro do quadrado */}
+    <Box mb={2}>
+      <Typography variant="subtitle2" mb={0.5}>
+        Título da Atividade
+      </Typography>
+      <TextField
+        label=""
+        value={titulo}
+        onChange={(e) => setTitulo(e.target.value)}
+        fullWidth
+      />
+    </Box>
+
+    <Typography variant="subtitle1" gutterBottom>
+      Questões Geradas:
+    </Typography>
+
+   {questoes.map((linha, i) => (
+  <Stack key={i} direction="row" spacing={1} alignItems="flex-start" sx={{ mb: 1 }}>
+    <TextField
+      fullWidth
+      multiline
+      value={linha}
+      onChange={(e) => atualizarQuestao(i, e.target.value)}
+    />
+    <IconButton
+      color="error"
+      onClick={() => {
+        const novasQuestoes = questoes.filter((_, index) => index !== i);
+        setQuestoes(novasQuestoes);
+      }}
+    >
+      <DeleteIcon />
+    </IconButton>
+  </Stack>
+))}
+
+    <Stack direction="row" spacing={2} mt={1} flexWrap="wrap">
+      <Button
+        variant="contained"
+        sx={{
+          backgroundColor: "#5c6bc0",
+          color: "#fff",
+          "&:hover": { backgroundColor: "#3949ab" },
+        }}
+        onClick={gerarPDF}
+      >
+        Gerar PDF
+      </Button>
+
+      {tipoQuestao === "alternativas" && (
+        <Button
+          variant="contained"
+          sx={{
+            backgroundColor: "#7e57c2",
+            color: "#fff",
+            "&:hover": { backgroundColor: "#5e35b1" },
+          }}
+          onClick={gerarPDFComGabarito}
+        >
+          Gerar PDF com Gabarito
+        </Button>
       )}
 
-      <ListaMateriais/>
+      {/* Botão para adicionar pergunta ou alternativa */}
+      <Button
+        variant="outlined"
+        sx={{
+          borderColor: "#5c6bc0",
+          color: "#5c6bc0",
+          "&:hover": { backgroundColor: "#e8eaf6", borderColor: "#3949ab" },
+        }}
+        onClick={() => setQuestoes([...questoes, ""])}
+      >
+        Adicionar Pergunta/Alternativa
+      </Button>
+    </Stack>
+  </Box>
+)}
 
+
+      <ListaMateriais />
     </Box>
   );
 }
