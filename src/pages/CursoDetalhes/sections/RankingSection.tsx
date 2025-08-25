@@ -1,9 +1,16 @@
 // src/components/RankingSection.tsx
 
 import { useEffect, useState } from "react";
-import { Box, CircularProgress, Typography, List, ListItem, ListItemText, Divider } from "@mui/material";
-import { RankingDTO } from "../types/types";
-
+import {
+  Box,
+  CircularProgress,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+} from "@mui/material";
+import { RankingDTO } from "../../../components/types/types";
 
 type RankingSectionProps = {
   cursoId: string;
@@ -17,11 +24,14 @@ export function RankingSection({ cursoId }: RankingSectionProps) {
   useEffect(() => {
     const carregarRanking = async () => {
       try {
-        const response = await fetch(`http://localhost:8080/progresso/${cursoId}/ranking`,{
-              headers: {
-                Authorization: `Bearer ${localStorage.getItem("token")}`,
-              },
-            });
+        const response = await fetch(
+          `http://localhost:8080/progresso/${cursoId}/ranking`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
         if (!response.ok) {
           throw new Error("Erro ao carregar o ranking");
         }
@@ -51,7 +61,9 @@ export function RankingSection({ cursoId }: RankingSectionProps) {
         Ranking do Curso
       </Typography>
       {ranking.length === 0 ? (
-        <Typography color="text.secondary">Nenhuma pontuação registrada ainda.</Typography>
+        <Typography color="text.secondary">
+          Nenhuma pontuação registrada ainda.
+        </Typography>
       ) : (
         <List>
           {ranking.map((aluno, index) => (

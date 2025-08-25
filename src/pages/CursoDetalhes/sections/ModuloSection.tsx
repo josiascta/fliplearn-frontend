@@ -2,7 +2,7 @@
 
 import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { useState } from "react";
-import { ModuloDTO } from "../types/types";
+import { ModuloDTO } from "../../../components/types/types";
 
 type ModulosSectionProps = {
   session: any;

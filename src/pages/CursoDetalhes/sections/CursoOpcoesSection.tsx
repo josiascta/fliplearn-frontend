@@ -1,14 +1,8 @@
 // src/components/CursoOpcoesSection.tsx
 
-import {
-  Box,
-  Button,
-  Stack,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { AlunoDTO } from "../types/types";
+import { AlunoDTO } from "../../../components/types/types";
 
 type CursoOpcoesSectionProps = {
   cursoId: string;
@@ -124,11 +118,7 @@ export function CursoOpcoesSection({ cursoId }: CursoOpcoesSectionProps) {
             <strong>Email:</strong> {alunoEncontrado.email}
           </Typography>
 
-          <Button
-            variant="contained"
-            onClick={handleAddAluno}
-            sx={{ mt: 2 }}
-          >
+          <Button variant="contained" onClick={handleAddAluno} sx={{ mt: 2 }}>
             Confirmar Adição
           </Button>
         </Box>
@@ -162,9 +152,7 @@ export function CursoOpcoesSection({ cursoId }: CursoOpcoesSectionProps) {
                 }}
               >
                 <Typography fontWeight={600}>{aluno.nome}</Typography>
-                <Typography color="text.secondary">
-                  {aluno.email}
-                </Typography>
+                <Typography color="text.secondary">{aluno.email}</Typography>
               </Box>
             ))}
           </Stack>

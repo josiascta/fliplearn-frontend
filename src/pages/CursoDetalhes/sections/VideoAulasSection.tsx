@@ -21,7 +21,7 @@ import {
   ModuloDTO,
   ProgressoDTO,
   VideoAulaDTO,
-} from "../types/types";
+} from "../../../components/types/types";
 
 // ajuste conforme onde você define os tipos
 
@@ -191,52 +191,55 @@ export function VideoAulasSection({
           >
             {mostrarFormulario ? "Cancelar Cadastro" : "Adicionar Video Aula"}
           </Button>
-        {mostrarFormulario && (
-          <Box>
-          <Typography variant="subtitle1" gutterBottom>
-            Adicionar Video Aula
-          </Typography>
-          <Stack spacing={2}>
-            <TextField
-              label="Título"
-              value={novoTitulo}
-              onChange={(e) => setNovoTitulo(e.target.value)}
-              fullWidth
-            />
-            <TextField
-              label="Descrição"
-              value={descricao}
-              onChange={(e) => setDescricao(e.target.value)}
-            />
-            <TextField
-              label="ID do vídeo (YouTube)"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-            />
-            <FormControl fullWidth>
-              <InputLabel id="select-modulo-label">Módulo</InputLabel>
-              <Select
-                labelId="select-modulo-label"
-                value={moduloSelecionado}
-                label="Módulo"
-                onChange={(e) => setModuloSelecionado(Number(e.target.value))}
-              >
-                {modulos.map((modulo) => (
-                  <MenuItem key={modulo.id} value={modulo.id}>
-                    {modulo.nome}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+          {mostrarFormulario && (
+            <Box>
+              <Typography variant="subtitle1" gutterBottom>
+                Adicionar Video Aula
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  label="Título"
+                  value={novoTitulo}
+                  onChange={(e) => setNovoTitulo(e.target.value)}
+                  fullWidth
+                />
+                <TextField
+                  label="Descrição"
+                  value={descricao}
+                  onChange={(e) => setDescricao(e.target.value)}
+                />
+                <TextField
+                  label="ID do vídeo (YouTube)"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                />
+                <FormControl fullWidth>
+                  <InputLabel id="select-modulo-label">Módulo</InputLabel>
+                  <Select
+                    labelId="select-modulo-label"
+                    value={moduloSelecionado}
+                    label="Módulo"
+                    onChange={(e) =>
+                      setModuloSelecionado(Number(e.target.value))
+                    }
+                  >
+                    {modulos.map((modulo) => (
+                      <MenuItem key={modulo.id} value={modulo.id}>
+                        {modulo.nome}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <Button variant="contained" onClick={handleAddVideoaula}>
-              Cadastrar Video Aula
-            </Button>
-            {msgVideo && (
-              <Typography color="text.secondary">{msgVideo}</Typography>
-            )}
-          </Stack>
-          </Box>)}
+                <Button variant="contained" onClick={handleAddVideoaula}>
+                  Cadastrar Video Aula
+                </Button>
+                {msgVideo && (
+                  <Typography color="text.secondary">{msgVideo}</Typography>
+                )}
+              </Stack>
+            </Box>
+          )}
         </Box>
       )}
 

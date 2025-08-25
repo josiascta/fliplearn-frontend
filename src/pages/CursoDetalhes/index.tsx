@@ -10,14 +10,19 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
-import { AvisosSection } from "../components/section/AvisosSection";
-import { CursoOpcoesSection } from "../components/section/CursoOpcoesSection";
-import { MateriaisSection } from "../components/section/MateriaisSection";
-import { ModulosSection } from "../components/section/ModuloSection";
-import { VideoAulasSection } from "../components/section/VideoAulasSection";
-import { CursoDTO, ModuloDTO, ProgressoDTO, VideoAulaDTO } from "../components/types/types";
-import { useAuth } from "../hooks/useAuth";
-import { RankingSection } from "../components/section/RankingSection";
+import { AvisosSection } from "./sections/AvisosSection";
+import { CursoOpcoesSection } from "./sections/CursoOpcoesSection";
+import { MateriaisSection } from "./sections/MateriaisSection";
+import { ModulosSection } from "./sections/ModuloSection";
+import { VideoAulasSection } from "./sections/VideoAulasSection";
+import {
+  CursoDTO,
+  ModuloDTO,
+  ProgressoDTO,
+  VideoAulaDTO,
+} from "../../components/types/types";
+import { useAuth } from "../../hooks/useAuth";
+import { RankingSection } from "./sections/RankingSection";
 
 export function CursoDetalhes() {
   const { id } = useParams();
@@ -29,7 +34,6 @@ export function CursoDetalhes() {
   const [videoaulasDoModulo, setVideoaulasDoModulo] = useState<
     Record<number, VideoAulaDTO[]>
   >({});
-
 
   const [modulos, setModulos] = useState<ModuloDTO[]>([]);
 
@@ -55,13 +59,16 @@ export function CursoDetalhes() {
       .then((res) => res.json())
       .then((data) => setVideoaulas(data))
       .catch((err) => console.error("Erro ao buscar videoaulas:", err));
-      
-    if(session?.role === "ALUNO"){
-      fetch(`http://localhost:8080/progresso/${session?.idUsuario}/curso/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      })
+
+    if (session?.role === "ALUNO") {
+      fetch(
+        `http://localhost:8080/progresso/${session?.idUsuario}/curso/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      )
         .then((res) => (res.ok ? res.json() : null))
         .then((progresso) => setProgresso(progresso));
     }
@@ -101,8 +108,6 @@ export function CursoDetalhes() {
       );
   }, [id]);
 
-
-
   if (isLoadingSession) {
     return (
       <Box mt={6} textAlign="center">
@@ -133,20 +138,30 @@ export function CursoDetalhes() {
   }
 
   return (
-    <Container maxWidth="md" sx={{ py: 6 }}>
+    <Container
+      maxWidth="md"
+      sx={{
+        py: 6,
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Typography variant="h4" fontWeight={600} gutterBottom>
         {curso.nome}
       </Typography>
-      {session.role === "ALUNO" && <Box mb={2}>
-        <Typography variant="h6">Status: {progresso?.status}</Typography>
-        <LinearProgress
-          variant="determinate"
-          value={progresso?.percentualConcluido}
-        />
-        <Typography variant="body2" color="text.secondary">
-          {progresso?.percentualConcluido.toFixed(0)}% concluído
-        </Typography>
-      </Box>}
+      {session.role === "ALUNO" && (
+        <Box mb={2}>
+          <Typography variant="h6">Status: {progresso?.status}</Typography>
+          <LinearProgress
+            variant="determinate"
+            value={progresso?.percentualConcluido}
+          />
+          <Typography variant="body2" color="text.secondary">
+            {progresso?.percentualConcluido.toFixed(0)}% concluído
+          </Typography>
+        </Box>
+      )}
 
       <Tabs
         value={tabIndex}
@@ -161,16 +176,10 @@ export function CursoDetalhes() {
         {session.role === "PROFESSOR" && <Tab label="Opções do Curso" />}
       </Tabs>
 
-      {tabIndex === 0 && (
-        <AvisosSection cursoId={id!} />
-      )}
+      {tabIndex === 0 && <AvisosSection cursoId={id!} />}
 
-      {tabIndex === 1 && (
-        <MateriaisSection session={session} />
-      )}
-      {tabIndex === 2 && (
-        <RankingSection cursoId={id!} />
-      )}
+      {tabIndex === 1 && <MateriaisSection session={session} />}
+      {tabIndex === 2 && <RankingSection cursoId={id!} />}
 
       {tabIndex === 3 && (
         <VideoAulasSection
@@ -186,7 +195,7 @@ export function CursoDetalhes() {
 
       {tabIndex === 4 && session.role === "PROFESSOR" && (
         <ModulosSection
-        session={session}
+          session={session}
           cursoId={id!}
           modulos={modulos}
           setModulos={setModulos}
